@@ -1,16 +1,12 @@
-# Mintlify Starter Kit
+# FileFeed Documentation
 
-Use the starter kit to get your docs deployed and ready to customize.
+This is the documentation site for FileFeed, a powerful file import and processing platform for modern applications.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+## Structure
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
-
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+- **Getting Started** - Welcome and Quick Start guides
+- **Embedded Importers** - React SDK and integration guides  
+- **Automated Flows** - SFTP and workflow automation
 
 ## Development
 

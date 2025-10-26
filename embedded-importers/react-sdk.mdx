@@ -1,0 +1,296 @@
+---
+title: "React SDK"
+description: "Integrate FileFeed importers into your React applications"
+---
+
+# React Embedding
+
+> Embed FileFeed in React applications
+
+Embed FileFeed in your React application using our React SDK. This provides React components and hooks for seamless data import, mapping, validation, and transformation.
+
+## Installation
+
+```bash
+npm install @filefeed/react
+```
+
+## Basic Implementation
+
+### 1. Wrap Your App
+
+Wrap your application with the `FilefeedProvider`:
+
+```jsx
+import { FilefeedProvider } from "@filefeed/react";
+
+function App() {
+  return (
+    <FilefeedProvider>
+      <YourApp />
+    </FilefeedProvider>
+  );
+}
+```
+
+### 2. Add Import Interface
+
+Use the `FilefeedWorkbook` component to create a data import interface:
+
+```jsx
+import { FilefeedWorkbook } from "@filefeed/react";
+
+function YourComponent() {
+  const config = {
+    name: "My Data Import",
+    sheets: [
+      {
+        name: "Users",
+        slug: "users",
+        fields: [
+          { key: "email", type: "email", label: "Email", required: true },
+          { key: "name", type: "string", label: "Name", required: true },
+        ],
+      },
+    ],
+  };
+
+  const handleImportComplete = (data) => {
+    console.log('Import completed:', data);
+  };
+
+  return (
+    <div>
+      <h1>Welcome to our app</h1>
+      <FilefeedWorkbook
+        config={config}
+        events={{ onWorkbookComplete: handleImportComplete }}
+      />
+    </div>
+  );
+}
+```
+
+### 3. Configure Your Import
+
+Set up your data schema and import preferences. No additional credentials required for basic usage.
+
+For advanced configuration options, see [Advanced Configuration](./advanced-configuration).
+
+## Complete Example
+
+<Note>
+  The example below will create a workbook with a contacts sheet. Users can upload CSV/Excel files or manually enter data.
+</Note>
+
+```jsx
+import React from "react";
+import { FilefeedProvider, FilefeedWorkbook } from "@filefeed/react";
+
+function ImportComponent() {
+  const config = {
+    name: "Contact Import",
+    sheets: [
+      {
+        name: "Contacts",
+        slug: "contacts",
+        fields: [
+          { key: "name", type: "string", label: "Name", required: true },
+          { key: "email", type: "email", label: "Email", required: true },
+          { key: "phone", type: "string", label: "Phone" },
+        ],
+      },
+    ],
+  };
+
+  const handleImportComplete = (data) => {
+    console.log(`Imported ${data.length} contacts`);
+    // Process your data here
+  };
+
+  return (
+    <FilefeedWorkbook
+      config={config}
+      events={{ onWorkbookComplete: handleImportComplete }}
+    />
+  );
+}
+
+function App() {
+  return (
+    <FilefeedProvider>
+      <div>
+        <h1>My Application</h1>
+        <ImportComponent />
+      </div>
+    </FilefeedProvider>
+  );
+}
+
+export default App;
+```
+
+## Configuration Options
+
+For all configuration options including custom transforms, validations, and advanced settings, see [Advanced Configuration](./advanced-configuration).
+
+## Using Workbook Component
+
+For more control, you can use the `FilefeedWorkbook` component directly with custom configuration:
+
+```jsx
+import { FilefeedProvider, FilefeedWorkbook } from "@filefeed/react";
+
+const workbookConfig = {
+  name: "Advanced Import",
+  sheets: [
+    {
+      name: "Products",
+      slug: "products",
+      fields: [
+        { key: "sku", type: "string", label: "SKU", required: true, unique: true },
+        { key: "name", type: "string", label: "Product Name", required: true },
+        { key: "price", type: "number", label: "Price", required: true },
+        { key: "category", type: "string", label: "Category" },
+      ],
+    },
+  ],
+};
+
+function App() {
+  return (
+    <FilefeedProvider>
+      <FilefeedWorkbook config={workbookConfig} theme="light" />
+    </FilefeedProvider>
+  );
+}
+```
+
+## Creating New Workbooks
+
+To create a new Workbook each time:
+
+1. Add a `workbook` configuration object with sheets and fields
+2. Optionally configure custom transforms and validations
+3. Set up event handlers for data processing
+
+```jsx
+import { FilefeedProvider, FilefeedWorkbook } from "@filefeed/react";
+
+const workbookConfig = {
+  name: "User Import",
+  sheets: [
+    {
+      name: "Users",
+      slug: "users",
+      fields: [
+        { key: "email", type: "email", label: "Email", required: true, unique: true },
+        { key: "firstName", type: "string", label: "First Name", required: true },
+        { key: "lastName", type: "string", label: "Last Name", required: true },
+        { key: "department", type: "string", label: "Department" },
+      ],
+    },
+  ],
+};
+
+function App() {
+  return (
+    <FilefeedProvider>
+      <FilefeedWorkbook config={workbookConfig} />
+    </FilefeedProvider>
+  );
+}
+```
+
+For detailed workbook configuration, see the [Workbook Configuration Reference](./workbook-configuration).
+
+## Using Hooks for Advanced Control
+
+For more advanced control, you can use the `useFilefeed` hook:
+
+```jsx
+import { FilefeedProvider, useFilefeed } from "@filefeed/react";
+
+function ImportButton() {
+  const { openPortal, closePortal } = useFilefeed();
+
+  const handleImport = () => {
+    openPortal();
+  };
+
+  return (
+    <div>
+      <button onClick={handleImport}>Import Data</button>
+      <button onClick={closePortal}>Close Import</button>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <FilefeedProvider>
+      <ImportButton />
+    </FilefeedProvider>
+  );
+}
+```
+
+This approach allows you to:
+
+* Control the import interface programmatically
+* Add custom event listeners and data processing
+* Integrate with your existing UI components
+
+For complete integration examples, see [Integration Examples](./integration-examples).
+
+## TypeScript Support
+
+The React SDK includes full TypeScript support:
+
+```tsx
+import { FilefeedProvider, FilefeedWorkbook, CreateWorkbookConfig } from "@filefeed/react";
+
+interface Props {
+  onDataImported?: (data: any[]) => void;
+}
+
+function ImportComponent({ onDataImported }: Props) {
+  const config: CreateWorkbookConfig = {
+    name: "TypeScript Import",
+    sheets: [
+      {
+        name: "Data",
+        slug: "data",
+        fields: [
+          { key: "id", type: "string", label: "ID", required: true },
+          { key: "value", type: "number", label: "Value" },
+        ],
+      },
+    ],
+  };
+
+  return (
+    <FilefeedWorkbook
+      config={config}
+      events={{ onWorkbookComplete: onDataImported }}
+    />
+  );
+}
+```
+
+## Next Steps
+
+* **Advanced Configuration**: [Custom transforms, validations, and advanced options](./advanced-configuration)
+* **Package Documentation**: See [@filefeed/react documentation](https://www.npmjs.com/package/@filefeed/react)
+
+## Quick Links
+
+<Card title="Advanced Configuration" icon="gear" href="/advanced-configuration">
+  Custom transforms, validations, and advanced options
+</Card>
+
+## Example Projects
+
+<Card title="React Boilerplate" icon="github" href="https://github.com/filefeed/create-filefeed-react">
+  Complete React application with FileFeed embedding - ready to run example
+</Card>

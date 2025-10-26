@@ -1,0 +1,429 @@
+---
+title: "Advanced Configuration"
+description: "Custom transforms, validations, and advanced FileFeed options"
+---
+
+# Advanced Configuration
+
+> Custom transforms, validations, and advanced options
+
+Configure FileFeed with custom data transformations, validations, theming, and advanced settings for production applications.
+
+## Custom Transforms
+
+Transform data during the import process using custom functions:
+
+```jsx
+import { FilefeedProvider, FilefeedWorkbook } from "@filefeed/react";
+
+const transformRegistry = {
+  trim: (value) => value == null ? value : String(value).trim(),
+  toLower: (value) => value == null ? value : String(value).toLowerCase(),
+  toUpper: (value) => value == null ? value : String(value).toUpperCase(),
+  formatPhone: (value) => {
+    if (!value) return value;
+    const cleaned = String(value).replace(/\D/g, '');
+    return cleaned.length === 10 ? 
+      `(${cleaned.slice(0,3)}) ${cleaned.slice(3,6)}-${cleaned.slice(6)}` : 
+      value;
+  },
+  parseCurrency: (value) => {
+    if (!value) return value;
+    const parsed = parseFloat(String(value).replace(/[^0-9.-]/g, ''));
+    return isNaN(parsed) ? value : parsed;
+  }
+};
+
+const config = {
+  name: "Advanced Import",
+  transformRegistry,
+  sheets: [
+    {
+      name: "Contacts",
+      slug: "contacts",
+      fields: [
+        { 
+          key: "email", 
+          type: "email", 
+          label: "Email", 
+          required: true,
+          defaultTransform: "toLower"
+        },
+        { 
+          key: "name", 
+          type: "string", 
+          label: "Full Name", 
+          required: true,
+          defaultTransform: "trim"
+        },
+        { 
+          key: "phone", 
+          type: "string", 
+          label: "Phone",
+          defaultTransform: "formatPhone"
+        },
+        { 
+          key: "salary", 
+          type: "number", 
+          label: "Salary",
+          defaultTransform: "parseCurrency"
+        }
+      ],
+    },
+  ],
+};
+
+function App() {
+  return (
+    <FilefeedProvider>
+      <FilefeedWorkbook config={config} />
+    </FilefeedProvider>
+  );
+}
+```
+
+## Custom Validations
+
+Add custom validation rules to ensure data quality:
+
+```jsx
+const validationRegistry = {
+  domainAllowlist: (value, field, rowIndex, rowData, args) => {
+    if (!value) return true;
+    const allowed = args?.allowed || ["company.com"];
+    const domain = String(value).split("@")[1] || "";
+    return allowed.includes(domain) || `Email domain '${domain}' is not allowed`;
+  },
+  
+  ageRange: (value, field, rowIndex, rowData, args) => {
+    if (!value) return true;
+    const age = parseInt(value);
+    const min = args?.min || 18;
+    const max = args?.max || 65;
+    return (age >= min && age <= max) || `Age must be between ${min} and ${max}`;
+  },
+  
+  uniqueInSheet: (value, field, rowIndex, rowData, args) => {
+    if (!value) return true;
+    const sheetData = args?.sheetData || [];
+    const duplicates = sheetData.filter((row, index) => 
+      index !== rowIndex && row[field.key] === value
+    );
+    return duplicates.length === 0 || `Value '${value}' already exists in this sheet`;
+  }
+};
+
+const config = {
+  name: "Validated Import",
+  validationRegistry,
+  sheets: [
+    {
+      name: "Employees",
+      slug: "employees",
+      fields: [
+        { 
+          key: "email", 
+          type: "email", 
+          label: "Email", 
+          required: true,
+          validations: [
+            { type: "regex", value: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", message: "Invalid email format" },
+            { type: "custom", name: "domainAllowlist", args: { allowed: ["company.com", "partner.com"] } }
+          ]
+        },
+        { 
+          key: "age", 
+          type: "number", 
+          label: "Age", 
+          required: true,
+          validations: [
+            { type: "custom", name: "ageRange", args: { min: 21, max: 60 } }
+          ]
+        },
+        { 
+          key: "employeeId", 
+          type: "string", 
+          label: "Employee ID", 
+          required: true,
+          unique: true,
+          validations: [
+            { type: "custom", name: "uniqueInSheet", args: { sheetData: [] } }
+          ]
+        }
+      ],
+    },
+  ],
+};
+```
+
+## Theming
+
+Customize the appearance of FileFeed components:
+
+```jsx
+const customTheme = {
+  colors: {
+    primary: "#2563ea",
+    secondary: "#64748b",
+    success: "#059669",
+    warning: "#d97706",
+    error: "#dc2626",
+    background: "#ffffff",
+    surface: "#f8fafc",
+    text: "#1e293b"
+  },
+  fonts: {
+    primary: "Inter, system-ui, sans-serif",
+    mono: "JetBrains Mono, monospace"
+  },
+  spacing: {
+    xs: "0.25rem",
+    sm: "0.5rem",
+    md: "1rem",
+    lg: "1.5rem",
+    xl: "2rem"
+  },
+  borderRadius: {
+    sm: "0.25rem",
+    md: "0.5rem",
+    lg: "0.75rem"
+  }
+};
+
+function App() {
+  return (
+    <FilefeedProvider theme={customTheme}>
+      <FilefeedWorkbook config={config} />
+    </FilefeedProvider>
+  );
+}
+```
+
+## User Context
+
+Configure user context for tracking and analytics:
+
+```jsx
+const userContext = {
+  userId: "user-123",
+  organizationId: "org-456",
+  sessionId: "session-789"
+};
+
+function App() {
+  return (
+    <FilefeedProvider 
+      userContext={userContext}
+      config={{
+        environment: "production",
+        debug: false
+      }}
+    >
+      <FilefeedWorkbook config={config} />
+    </FilefeedProvider>
+  );
+}
+```
+
+## Event Handling
+
+Handle FileFeed events for custom processing:
+
+```jsx
+import { useFilefeedEvent } from "@filefeed/react";
+
+function ImportComponent() {
+  const config = {
+    name: "Event-Driven Import",
+    sheets: [
+      {
+        name: "Data",
+        slug: "data",
+        fields: [
+          { key: "name", type: "string", label: "Name", required: true },
+          { key: "value", type: "number", label: "Value" }
+        ]
+      }
+    ]
+  };
+
+  // Listen to import events
+  useFilefeedEvent("workbook:complete", (event) => {
+    console.log("Import completed:", event);
+    // Process data in your frontend
+    processImportedData(event.rows);
+  });
+
+  useFilefeedEvent("step:change", (event) => {
+    console.log("Step changed:", event.step);
+    // Track user progress
+    analytics.track("import_step_changed", {
+      step: event.step,
+      slug: event.slug
+    });
+  });
+
+  useFilefeedEvent("portal:open", () => {
+    console.log("Import portal opened");
+    analytics.track("import_started");
+  });
+
+  useFilefeedEvent("portal:close", () => {
+    console.log("Import portal closed");
+    analytics.track("import_cancelled");
+  });
+
+  return (
+    <FilefeedWorkbook 
+      config={config}
+      events={{
+        onWorkbookComplete: (data) => {
+          console.log("Workbook completed:", data);
+        },
+        onStepChange: (step) => {
+          console.log("Step changed:", step);
+        }
+      }}
+    />
+  );
+}
+```
+
+## Record Hooks
+
+Transform individual records during processing:
+
+```jsx
+const config = {
+  name: "Record Processing",
+  sheets: [
+    {
+      name: "Users",
+      slug: "users",
+      fields: [
+        { key: "firstName", type: "string", label: "First Name", required: true },
+        { key: "lastName", type: "string", label: "Last Name", required: true },
+        { key: "email", type: "email", label: "Email", required: true }
+      ]
+    }
+  ]
+};
+
+function App() {
+  return (
+    <FilefeedProvider>
+      <FilefeedWorkbook 
+        config={config}
+        onRecordHook={(record) => {
+          // Add computed fields
+          const firstName = record.get("firstName");
+          const lastName = record.get("lastName");
+          record.set("fullName", `${firstName} ${lastName}`);
+          
+          // Generate email if missing
+          if (!record.get("email") && firstName && lastName) {
+            const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@company.com`;
+            record.set("email", email);
+          }
+          
+          // Add timestamp
+          record.set("importedAt", new Date().toISOString());
+          
+          return record;
+        }}
+      />
+    </FilefeedProvider>
+  );
+}
+```
+
+## Environment Configuration
+
+Configure different environments for development and production:
+
+```jsx
+// Development configuration
+const devConfig = {
+  environment: "sandbox",
+  debug: true,
+  apiUrl: "https://api-dev.filefeed.io",
+  features: {
+    advancedValidation: true,
+    customThemes: true,
+    analytics: false
+  }
+};
+
+// Production configuration
+const prodConfig = {
+  environment: "production",
+  debug: false,
+  apiUrl: "https://api.filefeed.io",
+  features: {
+    advancedValidation: true,
+    customThemes: true,
+    analytics: true
+  }
+};
+
+function App() {
+  const config = process.env.NODE_ENV === "production" ? prodConfig : devConfig;
+  
+  return (
+    <FilefeedProvider config={config}>
+      <FilefeedWorkbook config={workbookConfig} />
+    </FilefeedProvider>
+  );
+}
+```
+
+## Performance Optimization
+
+Optimize FileFeed for large datasets:
+
+```jsx
+const optimizedConfig = {
+  name: "Large Dataset Import",
+  performance: {
+    batchSize: 1000,
+    maxConcurrentUploads: 3,
+    enableStreaming: true,
+    compressionLevel: "medium"
+  },
+  sheets: [
+    {
+      name: "Large Dataset",
+      slug: "dataset",
+      fields: [
+        { key: "id", type: "string", label: "ID", required: true },
+        { key: "data", type: "string", label: "Data" }
+      ]
+    }
+  ]
+};
+
+function App() {
+  return (
+    <FilefeedProvider 
+      config={{
+        performance: {
+          enableVirtualScrolling: true,
+          maxRowsPerPage: 100
+        }
+      }}
+    >
+      <FilefeedWorkbook config={optimizedConfig} />
+    </FilefeedProvider>
+  );
+}
+```
+
+## Next Steps
+
+* **Troubleshooting**: Common issues and solutions
+
+## Quick Links
+
+<Card title="React Boilerplate" icon="github" href="https://github.com/filefeed/create-filefeed-react">
+  Complete React application with FileFeed embedding
+</Card>
