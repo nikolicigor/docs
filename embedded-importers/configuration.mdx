@@ -1,0 +1,92 @@
+---
+title: "Configuration"
+description: "Configure workbooks, fields, transforms, and validations"
+---
+
+## Workbook Configuration
+
+Define your workbook and sheets with fields and options.
+
+```jsx
+const config = {
+  name: "Advanced Import",
+  sheets: [
+    {
+      name: "Contacts",
+      slug: "contacts",
+      fields: [
+        { key: "email", type: "email", label: "Email", required: true, defaultTransform: "toLower" },
+        { key: "name", type: "string", label: "Full Name", required: true, defaultTransform: "trim" },
+        { key: "phone", type: "string", label: "Phone", defaultTransform: "formatPhone" },
+        { key: "salary", type: "number", label: "Salary", defaultTransform: "parseCurrency" }
+      ]
+    }
+  ],
+  transformRegistry,
+  validationRegistry,
+};
+```
+
+## Transform Registry
+
+Register reusable transforms.
+
+```jsx
+const transformRegistry = {
+  trim: (v) => (v == null ? v : String(v).trim()),
+  toLower: (v) => (v == null ? v : String(v).toLowerCase()),
+  toUpper: (v) => (v == null ? v : String(v).toUpperCase()),
+  formatPhone: (v) => {
+    if (!v) return v;
+    const cleaned = String(v).replace(/\D/g, "");
+    return cleaned.length === 10 ? `(${cleaned.slice(0,3)}) ${cleaned.slice(3,6)}-${cleaned.slice(6)}` : v;
+  },
+  parseCurrency: (v) => {
+    if (!v) return v;
+    const parsed = parseFloat(String(v).replace(/[^0-9.-]/g, ""));
+    return isNaN(parsed) ? v : parsed;
+  },
+};
+```
+
+## Validation Registry
+
+Add custom validations alongside built-ins.
+
+```jsx
+const validationRegistry = {
+  domainAllowlist: (value, field, rowIndex, rowData, args) => {
+    if (!value) return true;
+    const allowed = args?.allowed || ["company.com"]; 
+    const domain = String(value).split("@")[1] || "";
+    return allowed.includes(domain) || `Email domain '${domain}' is not allowed`;
+  },
+  ageRange: (value, field, rowIndex, rowData, args) => {
+    if (!value) return true;
+    const age = parseInt(value);
+    const min = args?.min || 18;
+    const max = args?.max || 65;
+    return (age >= min && age <= max) || `Age must be between ${min} and ${max}`;
+  },
+};
+```
+
+## Record Hooks
+
+Process each record during import.
+
+```jsx
+<FilefeedWorkbook 
+  config={config}
+  onRecordHook={(record) => {
+    const firstName = record.get("firstName");
+    const lastName = record.get("lastName");
+    record.set("fullName", `${firstName} ${lastName}`);
+    return record;
+  }}
+/>
+```
+
+<Tip>
+Use transforms for field-level normalization and record hooks for cross-field logic.
+</Tip>

@@ -1,0 +1,16 @@
+---
+title: "Authentication"
+description: "Authenticate API calls with API keys"
+---
+
+## API Key
+- Generate your API key in the dashboard
+- Pass it when creating the SDK client
+
+```ts
+const filefeed = new FileFeed({ apiKey: process.env.FILEFEED_API_KEY! });
+```
+
+<Note>
+All HTTP requests include the `X-API-Key` header.
+</Note>

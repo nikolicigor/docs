@@ -1,0 +1,32 @@
+---
+title: "Events"
+description: "Handle lifecycle events and programmatic control"
+---
+
+## Listening to Events
+
+Use events to react to user actions and import lifecycle updates.
+
+```jsx
+import { useFilefeedEvent } from "@filefeed/react";
+
+useFilefeedEvent("workbook:complete", (event) => {
+  console.log("Import completed:", event);
+});
+
+useFilefeedEvent("step:change", (event) => {
+  console.log("Step changed:", event.step);
+});
+```
+
+## Programmatic Control
+
+```jsx
+import { useFilefeed } from "@filefeed/react";
+
+const { openPortal, closePortal } = useFilefeed();
+```
+
+<Note>
+Events are ideal for analytics, progress tracking, and in-UI data processing.
+</Note>

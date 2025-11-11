@@ -1,0 +1,31 @@
+---
+title: "API Library"
+description: "TypeScript SDK for programmatic access to FileFeed"
+---
+
+## Overview
+
+The `@filefeed/sdk` package provides a type-safe client for the FileFeed API.
+
+- Authentication via API key
+- Resources: Pipeline Runs, Clients, Schemas, Pipelines, Webhooks
+- Pagination helpers and typed responses
+
+## Installation
+
+```bash
+npm install @filefeed/sdk
+```
+
+## Quick Example
+
+```ts
+import FileFeed from '@filefeed/sdk';
+
+const filefeed = new FileFeed({ apiKey: process.env.FILEFEED_API_KEY! });
+const runs = await filefeed.pipelineRuns.list({ status: 'completed', limit: 50 });
+```
+
+<Note>
+See the pages in this section for authentication and advanced usage.
+</Note>

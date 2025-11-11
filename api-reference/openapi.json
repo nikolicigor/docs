@@ -1,0 +1,510 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "FileFeed API",
+    "version": "1.0.0",
+    "description": "Official FileFeed REST API for pipeline runs, clients, schemas, pipelines, and webhooks."
+  },
+  "servers": [
+    { "url": "https://api.filefeed.io" }
+  ],
+  "tags": [
+    { "name": "Pipeline Runs" },
+    { "name": "Clients" },
+    { "name": "Schemas" },
+    { "name": "Pipelines" },
+    { "name": "Webhooks" }
+  ],
+  "security": [
+    { "ApiKeyAuth": [] }
+  ],
+  "paths": {
+    "/pipeline-runs": {
+      "get": {
+        "tags": ["Pipeline Runs"],
+        "summary": "List pipeline runs",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 1000 } },
+          { "name": "clientId", "in": "query", "schema": { "type": "string" } },
+          { "name": "pipelineId", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "$ref": "#/components/schemas/PipelineRunStatus" } },
+          { "name": "model", "in": "query", "schema": { "type": "string" } },
+          { "name": "clientName", "in": "query", "schema": { "type": "string" } },
+          { "name": "id", "in": "query", "schema": { "type": "array", "items": { "type": "string" } }, "style": "form", "explode": true }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated pipeline runs",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaginatedPipelineRuns" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/pipeline-runs/{id}": {
+      "get": {
+        "tags": ["Pipeline Runs"],
+        "summary": "Get a pipeline run",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Pipeline run", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PipelineRun" } } } },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/files/pipeline-runs/{id}": {
+      "get": {
+        "tags": ["Pipeline Runs"],
+        "summary": "Get pipeline run data (paginated)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "minimum": 0 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 1000 } }
+        ],
+        "responses": {
+          "200": { "description": "Processed data page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PipelineRunDataResponse" } } } }
+        }
+      }
+    },
+    "/pipeline-runs/{id}/status": {
+      "patch": {
+        "tags": ["Pipeline Runs"],
+        "summary": "Acknowledge a pipeline run",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PatchRunStatusRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Updated pipeline run", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PipelineRun" } } } }
+        }
+      }
+    },
+    "/files/pipeline-runs/{id}/reprocess": {
+      "post": {
+        "tags": ["Pipeline Runs"],
+        "summary": "Reprocess a pipeline run",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": {
+          "200": { "description": "Reprocess scheduled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/files/pipeline-runs/{id}/original": {
+      "get": {
+        "tags": ["Pipeline Runs"],
+        "summary": "Get presigned URL for original file",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "expiresIn", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Presigned URL", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PresignedUrlResponse" } } } }
+        }
+      }
+    },
+    "/files/pipeline-runs/{id}/processed": {
+      "get": {
+        "tags": ["Pipeline Runs"],
+        "summary": "Get presigned URL for processed file",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "expiresIn", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Presigned URL", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PresignedUrlResponse" } } } }
+        }
+      }
+    },
+    "/pipeline-runs/pipeline/{pipelineId}": {
+      "get": {
+        "tags": ["Pipeline Runs"],
+        "summary": "Get runs by pipeline",
+        "parameters": [
+          { "name": "pipelineId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Runs list", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaginatedPipelineRunsOrArray" } } } }
+        }
+      }
+    },
+
+    "/clients": {
+      "get": { "tags": ["Clients"], "summary": "List clients", "responses": { "200": { "description": "Clients", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Client" } } } } } } },
+      "post": { "tags": ["Clients"], "summary": "Create client", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateClientParams" } } } }, "responses": { "200": { "description": "Client", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } } } }
+    },
+    "/clients/{id}": {
+      "get": { "tags": ["Clients"], "summary": "Get client", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Client", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "patch": { "tags": ["Clients"], "summary": "Update client", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateClientParams" } } } }, "responses": { "200": { "description": "Client", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } } } },
+      "delete": { "tags": ["Clients"], "summary": "Delete client", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "204": { "description": "Deleted" } } }
+    },
+    "/clients/{id}/test-connection": {
+      "post": { "tags": ["Clients"], "summary": "Test SFTP connection", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Connection result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TestConnectionResponse" } } } } } }
+    },
+
+    "/schemas": {
+      "get": { "tags": ["Schemas"], "summary": "List schemas", "responses": { "200": { "description": "Schemas", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Schema" } } } } } } },
+      "post": { "tags": ["Schemas"], "summary": "Create schema", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateSchemaParams" } } } }, "responses": { "200": { "description": "Schema", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Schema" } } } } } }
+    },
+    "/schemas/{id}": {
+      "get": { "tags": ["Schemas"], "summary": "Get schema", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Schema", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Schema" } } } }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "patch": { "tags": ["Schemas"], "summary": "Update schema", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateSchemaParams" } } } }, "responses": { "200": { "description": "Schema", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Schema" } } } } } },
+      "delete": { "tags": ["Schemas"], "summary": "Delete schema", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "204": { "description": "Deleted" } } }
+    },
+    "/schemas/{schemaId}/validate": {
+      "post": { "tags": ["Schemas"], "summary": "Validate data against a schema", "parameters": [ { "name": "schemaId", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidateDataRequest" } } } }, "responses": { "200": { "description": "Validation result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidationResult" } } } } } }
+    },
+
+    "/pipelines": {
+      "get": { "tags": ["Pipelines"], "summary": "List pipelines", "responses": { "200": { "description": "Pipelines", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Pipeline" } } } } } } },
+      "post": { "tags": ["Pipelines"], "summary": "Create pipeline", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePipelineParams" } } } }, "responses": { "200": { "description": "Pipeline", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pipeline" } } } } } }
+    },
+    "/pipelines/{id}": {
+      "get": { "tags": ["Pipelines"], "summary": "Get pipeline", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Pipeline", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pipeline" } } } }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "patch": { "tags": ["Pipelines"], "summary": "Update pipeline", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdatePipelineParams" } } } }, "responses": { "200": { "description": "Pipeline", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pipeline" } } } } } },
+      "delete": { "tags": ["Pipelines"], "summary": "Delete pipeline", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "204": { "description": "Deleted" } } }
+    },
+    "/pipelines/{id}/toggle-active": {
+      "patch": { "tags": ["Pipelines"], "summary": "Toggle pipeline active status", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Pipeline", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pipeline" } } } } } }
+    },
+
+    "/webhooks": {
+      "get": { "tags": ["Webhooks"], "summary": "List webhooks", "responses": { "200": { "description": "Webhooks", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Webhook" } } } } } } },
+      "post": { "tags": ["Webhooks"], "summary": "Create webhook", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWebhookParams" } } } }, "responses": { "200": { "description": "Webhook", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Webhook" } } } } } }
+    },
+    "/webhooks/{id}": {
+      "get": { "tags": ["Webhooks"], "summary": "Get webhook", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Webhook", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Webhook" } } } }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "patch": { "tags": ["Webhooks"], "summary": "Update webhook", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateWebhookParams" } } } }, "responses": { "200": { "description": "Webhook", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Webhook" } } } } } },
+      "delete": { "tags": ["Webhooks"], "summary": "Delete webhook", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "204": { "description": "Deleted" } } }
+    },
+    "/webhooks/deliveries": {
+      "get": {
+        "tags": ["Webhooks"],
+        "summary": "List webhook deliveries",
+        "parameters": [
+          { "name": "webhookId", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "eventType", "in": "query", "schema": { "type": "string" } },
+          { "name": "success", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Paginated deliveries", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaginatedWebhookDeliveries" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    },
+    "responses": {
+      "BadRequest": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+      "NotFound": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+    },
+    "schemas": {
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "total": { "type": "integer" },
+          "totalPages": { "type": "integer" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "statusCode": { "type": "integer" },
+          "error": { "type": "string" }
+        }
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": { "message": { "type": "string" } },
+        "required": ["message"]
+      },
+
+      "PipelineRunStatus": {
+        "type": "string",
+        "enum": ["pending", "processing", "completed", "failed", "acknowledged"]
+      },
+      "PipelineRun": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "filename": { "type": "string" },
+          "path": { "type": "string" },
+          "size": { "type": "integer" },
+          "mimetype": { "type": "string" },
+          "metadata": { "type": "object", "additionalProperties": true },
+          "status": { "$ref": "#/components/schemas/PipelineRunStatus" },
+          "errorMessage": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "processedAt": { "type": "string", "format": "date-time" },
+          "clientId": { "type": "string" },
+          "schemaId": { "type": "string" },
+          "pipelineId": { "type": "string" },
+          "workspaceId": { "type": "string" }
+        },
+        "required": ["id", "filename", "status", "createdAt", "updatedAt", "clientId", "workspaceId"]
+      },
+      "PresignedUrlResponse": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "filename": { "type": "string" },
+          "mimetype": { "type": "string" },
+          "expiresIn": { "type": "integer" }
+        },
+        "required": ["url", "filename", "expiresIn"]
+      },
+      "PipelineRunDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "pipelineRunId": { "type": "string" },
+              "filename": { "type": "string" },
+              "totalRecords": { "type": "integer" },
+              "offset": { "type": "integer" },
+              "limit": { "type": "integer" },
+              "hasMore": { "type": "boolean" }
+            }
+          }
+        },
+        "required": ["data"]
+      },
+      "PaginatedPipelineRuns": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/PipelineRun" } },
+          "pagination": { "$ref": "#/components/schemas/Pagination" }
+        },
+        "required": ["data", "pagination"]
+      },
+      "PaginatedPipelineRunsOrArray": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/PaginatedPipelineRuns" },
+          { "type": "array", "items": { "$ref": "#/components/schemas/PipelineRun" } }
+        ]
+      },
+
+      "Client": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "sftpUsername": { "type": "string" },
+          "sftpPassword": { "type": "string" },
+          "sftpPrivateKey": { "type": "string" },
+          "sftpPassphrase": { "type": "string" },
+          "useHostedSFTP": { "type": "boolean" },
+          "awsUserName": { "type": "string" },
+          "awsPublicKey": { "type": "string" },
+          "awsPassword": { "type": "string" },
+          "ipWhitelist": { "type": "array", "items": { "type": "string" } },
+          "workspaceId": { "type": "string" },
+          "sftpServerDataId": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "name", "workspaceId", "createdAt", "updatedAt"]
+      },
+      "CreateClientParams": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "sftpUsername": { "type": "string" },
+          "sftpPassword": { "type": "string" },
+          "sftpPrivateKey": { "type": "string" },
+          "sftpPassphrase": { "type": "string" },
+          "useHostedSFTP": { "type": "boolean" },
+          "awsUserName": { "type": "string" },
+          "awsPublicKey": { "type": "string" },
+          "awsPassword": { "type": "string" },
+          "ipWhitelist": { "type": "array", "items": { "type": "string" } },
+          "sftpServerDataId": { "type": "string" }
+        },
+        "required": ["name"]
+      },
+      "UpdateClientParams": {
+        "allOf": [ { "$ref": "#/components/schemas/CreateClientParams" } ]
+      },
+      "TestConnectionResponse": {
+        "type": "object",
+        "properties": { "success": { "type": "boolean" }, "message": { "type": "string" } },
+        "required": ["success", "message"]
+      },
+
+      "SchemaField": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "required": { "type": "boolean" },
+          "description": { "type": "string" },
+          "validation": { "type": "object", "additionalProperties": true }
+        },
+        "required": ["name", "type"]
+      },
+      "Schema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "version": { "type": "integer" },
+          "description": { "type": "string" },
+          "fields": { "type": "array", "items": { "$ref": "#/components/schemas/SchemaField" } },
+          "workspaceId": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "name", "fields", "workspaceId", "createdAt", "updatedAt"]
+      },
+      "CreateSchemaParams": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "fields": { "type": "array", "items": { "$ref": "#/components/schemas/SchemaField" } }
+        },
+        "required": ["name", "fields"]
+      },
+      "UpdateSchemaParams": {
+        "allOf": [ { "$ref": "#/components/schemas/CreateSchemaParams" } ]
+      },
+      "ValidateDataRequest": {
+        "type": "object",
+        "properties": { "data": { "type": "object", "additionalProperties": true } },
+        "required": ["data"]
+      },
+      "ValidationResult": {
+        "type": "object",
+        "properties": {
+          "valid": { "type": "boolean" },
+          "errors": { "type": "array", "items": { "type": "object", "properties": { "field": { "type": "string" }, "message": { "type": "string" } }, "required": ["field", "message"] } }
+        },
+        "required": ["valid"]
+      },
+
+      "FieldMapping": {
+        "type": "object",
+        "properties": {
+          "sourceField": { "type": "string" },
+          "targetField": { "type": "string" },
+          "transform": { "type": "string" },
+          "defaultValue": { }
+        },
+        "required": ["sourceField", "targetField"]
+      },
+      "Pipeline": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "mappings": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/FieldMapping" } }, { "type": "object", "additionalProperties": true } ] },
+          "isActive": { "type": "boolean" },
+          "workspaceId": { "type": "string" },
+          "clientId": { "type": "string" },
+          "schemaId": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "name", "mappings", "isActive", "workspaceId", "clientId", "schemaId", "createdAt", "updatedAt"]
+      },
+      "CreatePipelineParams": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "mappings": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/FieldMapping" } }, { "type": "object", "additionalProperties": true } ] },
+          "clientId": { "type": "string" },
+          "schemaId": { "type": "string" },
+          "webhookIds": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["name", "mappings", "clientId", "schemaId"]
+      },
+      "UpdatePipelineParams": {
+        "allOf": [ { "$ref": "#/components/schemas/CreatePipelineParams" } ]
+      },
+
+      "Webhook": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "eventType": { "type": "string" },
+          "headers": { "type": "object", "additionalProperties": { "type": "string" } },
+          "secret": { "type": "string" },
+          "isActive": { "type": "boolean" },
+          "workspaceId": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "name", "url", "eventType", "isActive", "workspaceId", "createdAt", "updatedAt"]
+      },
+      "CreateWebhookParams": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "eventType": { "type": "string" },
+          "headers": { "type": "object", "additionalProperties": { "type": "string" } },
+          "secret": { "type": "string" },
+          "isActive": { "type": "boolean" }
+        },
+        "required": ["name", "url", "eventType"]
+      },
+      "UpdateWebhookParams": {
+        "allOf": [ { "$ref": "#/components/schemas/CreateWebhookParams" } ]
+      },
+      "WebhookDelivery": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "webhookId": { "type": "string" },
+          "eventType": { "type": "string" },
+          "success": { "type": "boolean" },
+          "statusCode": { "type": "integer" },
+          "errorMessage": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "webhookId", "eventType", "success", "statusCode", "timestamp"]
+      },
+      "PaginatedWebhookDeliveries": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/WebhookDelivery" } },
+          "pagination": { "$ref": "#/components/schemas/Pagination" }
+        },
+        "required": ["data", "pagination"]
+      },
+
+      "PatchRunStatusRequest": {
+        "type": "object",
+        "properties": { "status": { "type": "string", "enum": ["acknowledged"] } },
+        "required": ["status"]
+      }
+    }
+  }
+}

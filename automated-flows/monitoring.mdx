@@ -1,0 +1,18 @@
+---
+title: "Monitoring"
+description: "Track pipeline health, deliveries, and failures"
+---
+
+## What to Monitor
+- Pipeline run status (pending, processing, completed, failed)
+- Webhook delivery success/failure
+- Processing error messages and retry rates
+
+## Best Practices
+- Alert on sustained failures
+- Keep idempotency keys to avoid duplicate processing
+- Log event payloads with request IDs
+
+<Note>
+Use the API to list pipeline runs and webhook deliveries for analytics dashboards.
+</Note>

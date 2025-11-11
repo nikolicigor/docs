@@ -1,0 +1,21 @@
+---
+title: "API Introduction"
+description: "Base URL, authentication, and conventions"
+---
+
+## Base URL
+
+```
+https://api.filefeed.io
+```
+
+## Authentication
+- Header: `X-API-Key: <your_api_key>`
+
+## Pagination
+- Page-based: `?page=1&limit=50`
+- Offset-based (data pages): `?offset=0&limit=1000`
+
+<Note>
+For a typed client, use the `@filefeed/sdk` API Library.
+</Note>

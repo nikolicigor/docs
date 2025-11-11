@@ -1,0 +1,26 @@
+---
+title: "Installation"
+description: "Install and configure the TypeScript API library"
+---
+
+## Install
+
+```bash
+npm install @filefeed/sdk
+# or yarn add @filefeed/sdk
+# or pnpm add @filefeed/sdk
+```
+
+## Requirements
+- Node.js >= 18
+- TypeScript >= 5 (for TS projects)
+
+## Basic Setup
+
+```ts
+import FileFeed from '@filefeed/sdk';
+
+const filefeed = new FileFeed({
+  apiKey: process.env.FILEFEED_API_KEY!,
+});
+```

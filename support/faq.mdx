@@ -1,0 +1,22 @@
+---
+title: "FAQ"
+description: "Frequently asked questions"
+---
+
+## What file types are supported?
+CSV, Excel, JSON, and more. See pipeline configuration for specifics.
+
+## How do I get my API key?
+In the dashboard under My Account → Security Settings → API Key.
+
+## How do I verify webhooks?
+Use the `x-sftpsync-signature` header and HMAC-SHA256 with your secret.
+
+## Can I use the SDK on the server?
+Yes. The `@filefeed/sdk` targets Node.js 18+.
+
+## Do you support React?
+Yes. See Embedded Importers → React SDK.
+
+## How do I reprocess a file?
+Use the SDK: `filefeed.pipelineRuns.reprocess({ pipelineRunId })`.

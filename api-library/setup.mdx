@@ -1,0 +1,36 @@
+---
+title: "Setup"
+description: "Install, configure, and authenticate the TypeScript API library"
+---
+
+## Install
+
+```bash
+npm install @filefeed/sdk
+# or
+yarn add @filefeed/sdk
+# or
+pnpm add @filefeed/sdk
+```
+
+## Requirements
+- Node.js >= 18
+- TypeScript >= 5 (for TS projects)
+
+## Initialize the client
+
+```ts
+import FileFeed from '@filefeed/sdk';
+
+const filefeed = new FileFeed({
+  apiKey: process.env.FILEFEED_API_KEY!,
+});
+```
+
+<Note>
+All HTTP requests include the `X-API-Key` header. Store API keys in environment variables and never commit them.
+</Note>
+
+## Next steps
+- Explore resources and methods → [/api-library/typescript-sdk](/api-library/typescript-sdk)
+- Call endpoints with the API Reference → [/api-reference/introduction](/api-reference/introduction)

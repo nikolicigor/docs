@@ -1,0 +1,39 @@
+---
+title: "Pipelines"
+description: "Endpoints for managing data pipelines"
+---
+
+## List Pipelines
+- GET `/pipelines`
+
+## Get Pipeline
+- GET `/pipelines/{id}`
+
+## Create Pipeline
+- POST `/pipelines`
+
+```json
+{
+  "name": "Employee Data Pipeline",
+  "clientId": "cl_123",
+  "schemaId": "sc_123",
+  "mappings": [
+    { "sourceField": "emp_id", "targetField": "id" },
+    { "sourceField": "full_name", "targetField": "name" }
+  ],
+  "webhookIds": ["wh_123"]
+}
+```
+
+## Update Pipeline
+- PATCH `/pipelines/{id}`
+
+## Delete Pipeline
+- DELETE `/pipelines/{id}`
+
+## Toggle Active
+- PATCH `/pipelines/{id}/toggle-active`
+
+<Tip>
+Pipelines define mappings and transformations between source files and your schema.
+</Tip>

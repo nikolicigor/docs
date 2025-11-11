@@ -1,0 +1,95 @@
+---
+title: "TypeScript SDK"
+description: "Resource clients and typed responses"
+---
+
+## Resources and methods
+
+<AccordionGroup>
+  <Accordion icon="server" title="pipelineRuns">
+    - `list(params)` – filter by status, client, pipeline, paginate
+    - `retrieve(id)` – get a single run
+    - `getData({ pipelineRunId, offset?, limit? })` – retrieve processed rows
+    - `ack({ pipelineRunId })` – mark as processed
+    - `reprocess({ pipelineRunId })` – retry processing
+    - `getOriginalFileUrl({ pipelineRunId, expiresIn? })`
+    - `getProcessedFileUrl({ pipelineRunId, expiresIn? })`
+
+    ```ts
+    // Example
+    const runs = await filefeed.pipelineRuns.list({ status: 'completed', limit: 25 });
+    const data = await filefeed.pipelineRuns.getData({ pipelineRunId: runs.data[0].id, limit: 1000 });
+    await filefeed.pipelineRuns.ack({ pipelineRunId: runs.data[0].id });
+    ```
+
+    <Tip>
+    See endpoints: [/api-reference/pipeline-runs](/api-reference/pipeline-runs)
+    </Tip>
+  </Accordion>
+
+  <Accordion icon="users" title="clients">
+    - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `testConnection(id)`
+
+    ```ts
+    const client = await filefeed.clients.create({ name: 'My Client', sftpUsername: 'user', sftpPassword: 'pass' });
+    const ok = await filefeed.clients.testConnection(client.id);
+    ```
+
+    <Tip>
+    See endpoints: [/api-reference/clients](/api-reference/clients)
+    </Tip>
+  </Accordion>
+
+  <Accordion icon="database" title="schemas">
+    - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `validate({ schemaId, data })`
+
+    ```ts
+    const schema = await filefeed.schemas.create({ name: 'Employee', fields: [{ name: 'id', type: 'string', required: true }] });
+    const result = await filefeed.schemas.validate({ schemaId: schema.id, data: { id: '123' } });
+    ```
+
+    <Tip>
+    See endpoints: [/api-reference/schemas](/api-reference/schemas)
+    </Tip>
+  </Accordion>
+
+  <Accordion icon="shuffle" title="pipelines">
+    - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `toggleActive(id)`
+
+    ```ts
+    const pipeline = await filefeed.pipelines.create({ name: 'Employees', clientId: 'cl_123', schemaId: 'sc_123', mappings: [] });
+    await filefeed.pipelines.toggleActive(pipeline.id);
+    ```
+
+    <Tip>
+    See endpoints: [/api-reference/pipelines](/api-reference/pipelines)
+    </Tip>
+  </Accordion>
+
+  <Accordion icon="bell" title="webhooks">
+    - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `listDeliveries(params)`
+
+    ```ts
+    const webhook = await filefeed.webhooks.create({ name: 'Success', url: 'https://example.com/hook', eventType: 'success' });
+    const deliveries = await filefeed.webhooks.listDeliveries({ webhookId: webhook.id, limit: 50 });
+    ```
+
+    <Tip>
+    See endpoints: [/api-reference/webhooks](/api-reference/webhooks)
+    </Tip>
+  </Accordion>
+</AccordionGroup>
+
+## Example: Paginate Data
+
+```ts
+const runs = await filefeed.pipelineRuns.list({ status: 'completed', limit: 50 });
+for (const run of runs.data) {
+  let offset: number | null = 0;
+  do {
+    const page = await filefeed.pipelineRuns.getData({ pipelineRunId: run.id, limit: 1000, offset });
+    // process page.data
+    offset = page.data.length === 1000 ? (offset ?? 0) + page.data.length : null;
+  } while (offset !== null);
+}
+```

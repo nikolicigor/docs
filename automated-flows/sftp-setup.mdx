@@ -1,0 +1,30 @@
+---
+title: "SFTP Setup"
+description: "Configure clients, schemas, and pipelines for SFTP workflows"
+---
+
+## Clients
+- Dedicated SFTP space per client
+- Unique username and password
+- Host provided on client page
+
+## Schemas
+- Define fields, types, and validation rules
+- Ensure data quality before processing
+
+## Pipelines
+- Associate client + schema
+- Configure field mappings and transformations
+- Creates SFTP folder for uploads
+
+## Typical Workflow
+1. Create client and credentials
+2. Define schema (fields, types, validations)
+3. Create pipeline (mappings, transformations)
+4. Upload starter file (headers template)
+5. Client uploads files to pipeline folder
+6. FileFeed processes and emits webhook
+
+<Note>
+You can retrieve processed data via REST API or the SDK after the webhook fires.
+</Note>

@@ -1,0 +1,64 @@
+---
+title: "Clients"
+description: "Endpoints for managing SFTP clients"
+---
+
+## List Clients
+- GET `/clients`
+
+```bash
+curl -H "X-API-Key: $FILEFEED_API_KEY" \
+  "https://api.filefeed.io/clients"
+```
+
+## Get Client
+- GET `/clients/{id}`
+
+```bash
+curl -H "X-API-Key: $FILEFEED_API_KEY" \
+  "https://api.filefeed.io/clients/cl_123"
+```
+
+## Create Client
+- POST `/clients`
+- Body example
+
+```json
+{
+  "name": "My SFTP Client",
+  "sftpUsername": "user",
+  "sftpPassword": "password",
+  "ipWhitelist": ["203.0.113.0/24"],
+  "useHostedSFTP": false
+}
+```
+
+## Update Client
+- PATCH `/clients/{id}`
+
+```bash
+curl -X PATCH -H "X-API-Key: $FILEFEED_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Updated Name"}' \
+  "https://api.filefeed.io/clients/cl_123"
+```
+
+## Delete Client
+- DELETE `/clients/{id}`
+
+```bash
+curl -X DELETE -H "X-API-Key: $FILEFEED_API_KEY" \
+  "https://api.filefeed.io/clients/cl_123"
+```
+
+## Test Connection
+- POST `/clients/{id}/test-connection`
+
+```bash
+curl -X POST -H "X-API-Key: $FILEFEED_API_KEY" \
+  "https://api.filefeed.io/clients/cl_123/test-connection"
+```
+
+<Tip>
+Prefer the SDK for type-safe calls: `filefeed.clients.list()`
+</Tip>

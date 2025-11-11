@@ -1,0 +1,56 @@
+---
+title: "Core Concepts"
+description: "Understand FileFeed fundamentals: Clients, Schemas, Pipelines, Pipeline Runs, and Webhooks"
+---
+
+## Overview
+
+FileFeed streamlines file-based integrations through two primary paths:
+
+- **Embedded Importers**: In-app data import experiences (React SDK)
+- **Automated Flows**: Backend/SFTP-driven automation with webhooks and API
+
+## Building Blocks
+
+### Clients
+- Represents a data source (partner, vendor, tenant)
+- Has dedicated SFTP space and credentials
+- Isolated from other clients
+
+### Schemas
+- Define expected structure and validation rules
+- Ensure incoming files conform to your target model
+
+### Pipelines
+- Connect a client to a schema
+- Define mappings and optional transformations
+- Create dedicated SFTP folders for uploads
+
+### Pipeline Runs
+- Each processed file creates a pipeline run
+- Expose status, metadata, and processed data retrieval
+
+### Webhooks
+- Notify your system about pipeline events
+- Sign payloads for security (HMAC)
+
+<Note>
+Use webhooks to trigger data syncs. Use the REST API/SDK to fetch full processed data.
+</Note>
+
+## Choosing an Integration Path
+
+<Columns cols={2}>
+  <Card title="Embedded Importers" icon="react" href="/embedded-importers/overview">
+    Best for product teams who want a beautiful, guided import UX inside their app.
+  </Card>
+  <Card title="Automated Flows" icon="server" href="/automated-flows/overview">
+    Best for backend integrations, SFTP workflows, or scheduled data ingestion.
+  </Card>
+</Columns>
+
+## Next Steps
+
+- **Frontend**: Start with the React SDK → `/embedded-importers/react-sdk`
+- **Backend**: Set up SFTP and webhooks → `/automated-flows/sftp-setup`
+- **Programmatic**: Use the API Library → `/api-library/overview`

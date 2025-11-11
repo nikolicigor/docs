@@ -17,7 +17,8 @@
             "group": "Getting Started",
             "pages": [
               "index",
-              "quickstart"
+              "quickstart",
+              "core-concepts"
             ]
           },
           {
@@ -25,14 +26,39 @@
             "pages": [
               "embedded-importers/overview",
               "embedded-importers/react-sdk",
-              "embedded-importers/advanced-configuration"
+              "embedded-importers/configuration"
             ]
           },
           {
             "group": "Automated Flows",
             "pages": [
               "automated-flows/overview",
-              "automated-flows/sftp-flow"
+              "automated-flows/sftp-setup",
+              "automated-flows/webhooks",
+              "automated-flows/monitoring"
+            ]
+          },
+          {
+            "group": "API Library",
+            "pages": [
+              "api-library/overview",
+              "api-library/setup",
+              "api-library/typescript-sdk"
+            ]
+          },
+          {
+            "group": "API Reference",
+            "pages": [
+              "api-reference/introduction"
+            ],
+            "openapi": "/api-reference/openapi.json"
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/syncing-pipeline-data",
+              "guides/handling-errors",
+              "guides/going-to-production"
             ]
           }
         ]
@@ -76,6 +102,11 @@
       "x": "https://x.com/filefeed",
       "github": "https://github.com/filefeed",
       "linkedin": "https://linkedin.com/company/filefeed"
+    }
+  },
+  "api": {
+    "mdx": {
+      "auth": { "method": "key", "name": "x-api-key" }
     }
   }
 }

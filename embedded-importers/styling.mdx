@@ -1,0 +1,46 @@
+---
+title: "Styling"
+description: "Customize the look and feel of FileFeed components"
+---
+
+## Theming
+
+Provide a theme via the provider.
+
+```jsx
+const theme = {
+  colors: {
+    primary: "#2563ea",
+    success: "#059669",
+    warning: "#d97706",
+    error: "#dc2626",
+  },
+  fonts: {
+    primary: "Inter, system-ui, sans-serif",
+    mono: "JetBrains Mono, monospace",
+  },
+};
+
+<FilefeedProvider theme={theme}>
+  <FilefeedWorkbook config={config} />
+</FilefeedProvider>
+```
+
+## Performance Options
+
+```jsx
+<FilefeedProvider 
+  config={{
+    performance: {
+      enableVirtualScrolling: true,
+      maxRowsPerPage: 100,
+    },
+  }}
+>
+  <FilefeedWorkbook config={config} />
+</FilefeedProvider>
+```
+
+<Tip>
+Start with defaults. Tune performance options for very large datasets.
+</Tip>
