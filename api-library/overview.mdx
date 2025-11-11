@@ -75,30 +75,121 @@ For endpoint details and payload schemas, see the API Reference.
 </Note>
 
 <AccordionGroup>
-  <Accordion icon="server" title="pipelineRuns">
-    - `list(params)` – filter by status, client, pipeline, paginate
-    - `retrieve(id)` – get a single run
-    - `getData({ pipelineRunId, offset?, limit? })` – retrieve processed rows
-    - `ack({ pipelineRunId })` – mark as processed
-    - `reprocess({ pipelineRunId })` – retry processing
-    - `getOriginalFileUrl({ pipelineRunId, expiresIn? })`
-    - `getProcessedFileUrl({ pipelineRunId, expiresIn? })`
-  </Accordion>
-
   <Accordion icon="users" title="clients">
-    - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `testConnection(id)`
+    Manage SFTP clients and connection details.
+
+    | Method | Signature | Description |
+    |---|---|---|
+    | list | `list()` | List clients. |
+    | retrieve | `retrieve(id)` | Get a client. |
+    | create | `create(params)` | Create a client with credentials. |
+    | update | `update(id, params)` | Update client details. |
+    | remove | `remove(id)` | Delete a client. |
+    | testConnection | `testConnection(id)` | Test SFTP connectivity (returns success/message). |
+
+    **Common workflows**
+    - Provision a client with SFTP credentials
+    - Rotate credentials, manage allowlists
+    - Verify connectivity before onboarding
+
+    ```ts
+    const client = await filefeed.clients.create({ name: 'Acme' });
+    const ok = await filefeed.clients.testConnection(client.id);
+    ```
   </Accordion>
 
   <Accordion icon="database" title="schemas">
-    - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `validate({ schemaId, data })`
+    Define and validate your target data model.
+
+    | Method | Signature | Description |
+    |---|---|---|
+    | list | `list()` | List schemas. |
+    | retrieve | `retrieve(id)` | Get a schema. |
+    | create | `create(params)` | Create a schema (fields, validation). |
+    | update | `update(id, params)` | Update schema details. |
+    | remove | `remove(id)` | Delete a schema. |
+    | validate | `validate({ schemaId, data })` | Validate a payload against a schema. |
+
+    **Common workflows**
+    - Define required fields and validation rules
+    - Validate a sample payload pre-ingestion
+
+    ```ts
+    const schema = await filefeed.schemas.create({ name: 'Employees', fields: [
+      { name: 'email', type: 'string', required: true },
+      { name: 'name', type: 'string', required: true }
+    ] });
+    const result = await filefeed.schemas.validate({ schemaId: schema.id, data: { email: 'a@b.com', name: 'Ada' } });
+    ```
   </Accordion>
 
   <Accordion icon="shuffle" title="pipelines">
-    - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `toggleActive(id)`
+    Connect clients to schemas and define mappings/transforms.
+
+    | Method | Signature | Description |
+    |---|---|---|
+    | list | `list()` | List pipelines. |
+    | retrieve | `retrieve(id)` | Get a pipeline. |
+    | create | `create(params)` | Create a pipeline (mappings/transforms). |
+    | update | `update(id, params)` | Update pipeline configuration. |
+    | remove | `remove(id)` | Delete a pipeline. |
+    | toggleActive | `toggleActive(id)` | Enable/disable a pipeline. |
+
+    **Common workflows**
+    - Create a pipeline for a client + schema
+    - Adjust mappings, then toggle active for go-live
+
+    ```ts
+    const pipeline = await filefeed.pipelines.create({ name: 'Employees', clientId, schemaId, mappings: {} });
+    await filefeed.pipelines.toggleActive(pipeline.id);
+    ```
+  </Accordion>
+
+    <Accordion icon="server" title="pipelineRuns">
+    Manage processing jobs and retrieve processed data.
+
+    | Method | Signature | Description |
+    |---|---|---|
+    | list | `list({ status?, clientId?, pipelineId?, page?, limit? })` | Paginated runs. Filter by status/client/pipeline/ids. |
+    | retrieve | `retrieve(id)` | Get a single pipeline run. |
+    | getData | `getData({ pipelineRunId, offset?, limit? })` | Paginated processed rows (offset-based, up to 1000 per page). |
+    | ack | `ack({ pipelineRunId })` | Mark run as processed (idempotent). |
+    | reprocess | `reprocess({ pipelineRunId })` | Re-run processing for a given run. |
+    | getOriginalFileUrl | `getOriginalFileUrl({ pipelineRunId, expiresIn? })` | Presigned URL to the original file. |
+    | getProcessedFileUrl | `getProcessedFileUrl({ pipelineRunId, expiresIn? })` | Presigned URL to the processed file. |
+
+    **Common workflows**
+    - Fetch completed runs, paginate data, then acknowledge the run
+    - Download original or processed file for audit trails
+    - Reprocess failed runs after fixing mapping or schema
+
+    ```ts
+    // Quick example
+    const runs = await filefeed.pipelineRuns.list({ status: 'completed', limit: 25 });
+    const page = await filefeed.pipelineRuns.getData({ pipelineRunId: runs.data[0].id, limit: 1000 });
+    ```
   </Accordion>
 
   <Accordion icon="bell" title="webhooks">
-    - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `listDeliveries(params)`
+    Receive signed notifications for pipeline events.
+
+    | Method | Signature | Description |
+    |---|---|---|
+    | list | `list()` | List webhooks. |
+    | retrieve | `retrieve(id)` | Get a webhook. |
+    | create | `create(params)` | Create a webhook (URL, event type, secret). |
+    | update | `update(id, params)` | Update webhook configuration. |
+    | remove | `remove(id)` | Delete a webhook. |
+    | listDeliveries | `listDeliveries(params)` | Inspect delivery attempts and status codes. |
+
+    **Common workflows**
+    - Create a webhook for pipeline events
+    - Monitor delivery health and retry on failure
+
+    ```ts
+    const hook = await filefeed.webhooks.create({ name: 'Pipeline events', url: 'https://example.com/webhooks/filefeed', eventType: 'GENERAL' });
+    const deliveries = await filefeed.webhooks.listDeliveries({ webhookId: hook.id, page: 1, limit: 50 });
+    ```
   </Accordion>
 </AccordionGroup>
 
