@@ -65,10 +65,6 @@
   "navbar": {
     "links": [
       {
-        "label": "API Library",
-        "href": "https://filefeed.io/api-library/overview"
-      },
-      {
         "label": "Support",
         "href": "mailto:support@filefeed.io"
       }

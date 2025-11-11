@@ -3,10 +3,6 @@ title: "SFTP Flow"
 description: "Complete guide to integrating with FileFeed through SFTP, webhooks, and REST API"
 ---
 
-# SFTP Integration
-
-Complete guide to integrating with FileFeed through SFTP, webhooks, and REST API
-
 ## SFTP Integration
 
 FileFeed provides a comprehensive SFTP-based integration platform that automates 
@@ -315,46 +311,63 @@ app.listen(3000, () => {
 - Store your webhook secret securely
 - Implement proper error handling
 
-## REST API
+## Retrieve processed data
 
-FileFeed provides a REST API endpoint to fetch processed JSON data from your files.
+Use either the TypeScript SDK or the REST API to fetch processed JSON rows for a pipeline run.
 
-### 1. Retrieving Files by Pipeline Run ID
+<Tabs>
+  <Tab title="TypeScript SDK">
 
-To retrieve the data for a specific pipeline run, use the 
-`/files/pipeline-runs/:id` endpoint. This is useful when you need to 
-fetch data based on a specific processing job rather than searching by client 
-and file names.
+```ts
+import FileFeed from '@filefeed/sdk';
 
-You can find pipeline run IDs in two ways:
+const filefeed = new FileFeed({ apiKey: process.env.FILEFEED_API_KEY! });
 
-- **In the app:** Navigate to the Pipeline 
-  Runs tab in your dashboard to view and copy pipeline run IDs
-- **Via webhook:** Pipeline run IDs are 
-  included in webhook event payloads
-
-**Request Example:**
-
-```bash
-curl -X GET "https://api.filefeed.io/files/pipeline-runs/run_12345?offset=0&limit=10" \
-  -H "X-API-Key: your_api_key_here"
-```
-
-**Response Example:**
-
-```json
-{
-  "data": [
-    { "id": "123", "name": "Product Alpha", "email": "contact@example.com" },
-    { "id": "124", "name": "Product Beta", "email": "support@example.com" }
-  ],
-  "pagination": { "offset": 0, "limit": 10, "total": 2 }
+// Get recent completed runs, then paginate data for a run
+const runs = await filefeed.pipelineRuns.list({ status: 'completed', limit: 25 });
+for (const run of runs.data) {
+  let offset: number | null = 0;
+  do {
+    const page = await filefeed.pipelineRuns.getData({ pipelineRunId: run.id, limit: 1000, offset });
+    // process page.data
+    offset = page.data.length === 1000 ? (offset ?? 0) + page.data.length : null;
+  } while (offset !== null);
+  // Acknowledge once persisted
+  await filefeed.pipelineRuns.ack({ pipelineRunId: run.id });
 }
 ```
 
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X GET "https://api.sftpsync.io/files/pipeline-runs/run_123?offset=0&limit=1000" \
+  -H "X-API-Key: $API_KEY"
+```
+
+Example response:
+
+```json
+{
+  "data": [ { "id": "123", "email": "a@b.com" } ],
+  "metadata": {
+    "pipelineRunId": "run_123",
+    "offset": 0,
+    "limit": 1000,
+    "hasMore": false
+  }
+}
+```
+
+  </Tab>
+</Tabs>
+
+Finding the pipeline run ID:
+- In the app: Dashboard → Pipeline Runs
+- Via webhook: included in webhook payloads
+
 <Note>
-All API requests require authentication using your API key, which you can find 
-in the dashboard under **My Account** → **Security Settings** → **API Key** (click "Reveal").
+All requests require an API key. Store it securely and never commit it.
 </Note>
 
 ## Integration Checklist
