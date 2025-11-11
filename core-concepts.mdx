@@ -10,7 +10,40 @@ FileFeed streamlines file-based integrations through two primary paths:
 - **Embedded Importers**: In-app data import experiences (React SDK)
 - **Automated Flows**: Backend/SFTP-driven automation with webhooks and API
 
-## Building Blocks
+## Compare at a glance
+
+| Aspect | Embedded Importers | Automated Flows |
+|---|---|---|
+| Trigger | User-initiated in-app | Scheduled or external (e.g., SFTP uploads) |
+| Typical user | Product/Operations teams | Backend/Integrations teams |
+| Data entry | UI mapping, preview, validate | File drop to SFTP or other source |
+| Validation | In-app field + custom rules | Schema validation during processing |
+| Processing | Client app | FileFeed pipelines + your backend via webhooks |
+| Output | Records to your app | Webhook event + fetch processed data via API/SDK |
+| Best for | Self-serve onboarding, ad-hoc imports | Continuous or automated partner feeds |
+
+## Embedded Importers
+
+### What it is
+- In-app import experience powered by the React SDK
+- Validates and transforms data client-side before sending
+
+### When to use
+- Product-led import UX inside your app
+- One-off or occasional imports initiated by users
+
+### How it works
+1. Render the importer in your app
+2. Map/validate fields and preview results
+3. Submit to your backend to persist/process
+
+<Note>
+Learn more: /embedded-importers/overview · /embedded-importers/react-sdk · /embedded-importers/configuration
+</Note>
+
+## Automated Flows
+
+### Building Blocks
 
 ### Clients
 - Represents a data source (partner, vendor, tenant)

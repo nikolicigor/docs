@@ -64,12 +64,43 @@ Process files when specific events occur (file upload, API call, etc.)
 ### Continuous Flows
 Monitor directories or endpoints continuously for new files
 
+## Architecture
+
+```
+SFTP Upload (Client)
+  → FileFeed SFTP
+    → Pipeline (Schema + Mappings + Transforms)
+      → Processing & Validation
+        → Webhook Event (signed)
+          → Your Webhook Endpoint
+            → Fetch processed data via API/SDK
+              → Persist to your DB
+```
+
+<Tip>
+Respond quickly to webhooks and process asynchronously (queue/worker). Use the SDK to fetch full data pages.
+</Tip>
+
 ## Next Steps
 
-<Card
-  title="SFTP Flow"
-  icon="server"
-  href="/automated-flows/sftp-setup"
->
-  Learn how to set up automated file processing with SFTP.
-</Card>
+<CardGroup cols={2}>
+  <Card title="SFTP Setup" icon="server" href="/automated-flows/sftp-setup">
+    Create clients, schemas, and pipelines.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/automated-flows/webhooks">
+    Implement secure webhook listeners.
+  </Card>
+  <Card title="Monitoring" icon="activity" href="/automated-flows/monitoring">
+    Track runs and deliveries; set alerts.
+  </Card>
+  <Card title="API Library" icon="code" href="/api-library/overview">
+    Use the TypeScript SDK to sync data.
+  </Card>
+</CardGroup>
+
+### Checklist
+- [ ] Create Client (SFTP credentials)
+- [ ] Define Schema (fields & validation)
+- [ ] Create Pipeline (mappings & transforms)
+- [ ] Register Webhook (store secret, verify signature)
+- [ ] Fetch processed data and persist

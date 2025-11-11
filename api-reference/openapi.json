@@ -6,7 +6,7 @@
     "description": "Official FileFeed REST API for pipeline runs, clients, schemas, pipelines, and webhooks."
   },
   "servers": [
-    { "url": "https://api.filefeed.io" }
+    { "url": "https://api.sftpsync.io" }
   ],
   "tags": [
     { "name": "Pipeline Runs" },
@@ -23,6 +23,7 @@
       "get": {
         "tags": ["Pipeline Runs"],
         "summary": "List pipeline runs",
+        "operationId": "listPipelineRuns",
         "parameters": [
           { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
           { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 1000 } },
@@ -38,7 +39,11 @@
             "description": "Paginated pipeline runs",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/PaginatedPipelineRuns" }
+                "schema": { "$ref": "#/components/schemas/PaginatedPipelineRuns" },
+                "example": {
+                  "data": [ { "id": "run_123", "status": "completed" } ],
+                  "pagination": { "page": 1, "limit": 50, "total": 1, "totalPages": 1 }
+                }
               }
             }
           },
@@ -50,11 +55,12 @@
       "get": {
         "tags": ["Pipeline Runs"],
         "summary": "Get a pipeline run",
+        "operationId": "getPipelineRun",
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
-          "200": { "description": "Pipeline run", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PipelineRun" } } } },
+          "200": { "description": "Pipeline run", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PipelineRun" }, "example": { "id": "run_123", "status": "completed", "filename": "employees.csv" } } } },
           "404": { "$ref": "#/components/responses/NotFound" }
         }
       }
@@ -63,13 +69,14 @@
       "get": {
         "tags": ["Pipeline Runs"],
         "summary": "Get pipeline run data (paginated)",
+        "operationId": "getPipelineRunData",
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
           { "name": "offset", "in": "query", "schema": { "type": "integer", "minimum": 0 } },
           { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 1000 } }
         ],
         "responses": {
-          "200": { "description": "Processed data page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PipelineRunDataResponse" } } } }
+          "200": { "description": "Processed data page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PipelineRunDataResponse" }, "example": { "data": [ { "id": "123", "email": "a@b.com" } ], "metadata": { "pipelineRunId": "run_123", "offset": 0, "limit": 1000, "hasMore": false } } } } }
         }
       }
     },
@@ -77,10 +84,11 @@
       "patch": {
         "tags": ["Pipeline Runs"],
         "summary": "Acknowledge a pipeline run",
+        "operationId": "ackPipelineRun",
         "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PatchRunStatusRequest" } } }
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PatchRunStatusRequest" }, "example": { "status": "acknowledged" } } }
         },
         "responses": {
           "200": { "description": "Updated pipeline run", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PipelineRun" } } } }
@@ -91,9 +99,10 @@
       "post": {
         "tags": ["Pipeline Runs"],
         "summary": "Reprocess a pipeline run",
+        "operationId": "reprocessPipelineRun",
         "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
         "responses": {
-          "200": { "description": "Reprocess scheduled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+          "200": { "description": "Reprocess scheduled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" }, "example": { "message": "Reprocess scheduled" } } } }
         }
       }
     },
@@ -139,8 +148,8 @@
     },
 
     "/clients": {
-      "get": { "tags": ["Clients"], "summary": "List clients", "responses": { "200": { "description": "Clients", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Client" } } } } } } },
-      "post": { "tags": ["Clients"], "summary": "Create client", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateClientParams" } } } }, "responses": { "200": { "description": "Client", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } } } }
+      "get": { "tags": ["Clients"], "summary": "List clients", "operationId": "listClients", "responses": { "200": { "description": "Clients", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Client" } }, "example": [ { "id": "cl_123", "name": "Acme" } ] } } } } },
+      "post": { "tags": ["Clients"], "summary": "Create client", "operationId": "createClient", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateClientParams" }, "example": { "name": "Acme" } } } }, "responses": { "200": { "description": "Client", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" }, "example": { "id": "cl_123", "name": "Acme" } } } } } }
     },
     "/clients/{id}": {
       "get": { "tags": ["Clients"], "summary": "Get client", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Client", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } }, "404": { "$ref": "#/components/responses/NotFound" } } },
@@ -148,7 +157,7 @@
       "delete": { "tags": ["Clients"], "summary": "Delete client", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "204": { "description": "Deleted" } } }
     },
     "/clients/{id}/test-connection": {
-      "post": { "tags": ["Clients"], "summary": "Test SFTP connection", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Connection result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TestConnectionResponse" } } } } } }
+      "post": { "tags": ["Clients"], "summary": "Test SFTP connection", "operationId": "testClientConnection", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Connection result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TestConnectionResponse" }, "example": { "success": true, "message": "Connected" } } } } } }
     },
 
     "/schemas": {
@@ -190,6 +199,7 @@
       "get": {
         "tags": ["Webhooks"],
         "summary": "List webhook deliveries",
+        "operationId": "listWebhookDeliveries",
         "parameters": [
           { "name": "webhookId", "in": "query", "schema": { "type": "string" } },
           { "name": "page", "in": "query", "schema": { "type": "integer" } },
@@ -198,7 +208,7 @@
           { "name": "success", "in": "query", "schema": { "type": "boolean" } }
         ],
         "responses": {
-          "200": { "description": "Paginated deliveries", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaginatedWebhookDeliveries" } } } }
+          "200": { "description": "Paginated deliveries", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaginatedWebhookDeliveries" }, "example": { "data": [ { "id": "wd_1", "success": true, "statusCode": 200 } ], "pagination": { "page": 1, "limit": 50, "total": 1, "totalPages": 1 } } } } }
         }
       }
     }
@@ -208,7 +218,7 @@
       "ApiKeyAuth": {
         "type": "apiKey",
         "in": "header",
-        "name": "X-API-Key"
+        "name": "x-api-key"
       }
     },
     "responses": {

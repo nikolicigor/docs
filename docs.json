@@ -11,7 +11,8 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Documentation",
+        "tab": "Guides",
+        "icon": "book-open",
         "groups": [
           {
             "group": "Getting Started",
@@ -35,23 +36,9 @@
               "automated-flows/overview",
               "automated-flows/sftp-setup",
               "automated-flows/webhooks",
-              "automated-flows/monitoring"
+              "automated-flows/monitoring",
+              "api-library/overview"
             ]
-          },
-          {
-            "group": "API Library",
-            "pages": [
-              "api-library/overview",
-              "api-library/setup",
-              "api-library/typescript-sdk"
-            ]
-          },
-          {
-            "group": "API Reference",
-            "pages": [
-              "api-reference/introduction"
-            ],
-            "openapi": "/api-reference/openapi.json"
           },
           {
             "group": "Guides",
@@ -60,6 +47,19 @@
               "guides/handling-errors",
               "guides/going-to-production"
             ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "icon": "code",
+        "groups": [
+          {
+            "group": "API Reference",
+            "pages": [
+              "api-reference/introduction"
+            ],
+            "openapi": "/api-reference/openapi.json"
           }
         ]
       }
@@ -74,6 +74,10 @@
   },
   "navbar": {
     "links": [
+      {
+        "label": "API Library",
+        "href": "https://filefeed.io/api-library/overview"
+      },
       {
         "label": "Support",
         "href": "mailto:support@filefeed.io"

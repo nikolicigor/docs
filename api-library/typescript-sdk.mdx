@@ -5,6 +5,10 @@ description: "Resource clients and typed responses"
 
 ## Resources and methods
 
+<Note>
+For endpoint details and payload schemas, see the API Reference.
+</Note>
+
 <AccordionGroup>
   <Accordion icon="server" title="pipelineRuns">
     - `list(params)` – filter by status, client, pipeline, paginate
@@ -14,69 +18,22 @@ description: "Resource clients and typed responses"
     - `reprocess({ pipelineRunId })` – retry processing
     - `getOriginalFileUrl({ pipelineRunId, expiresIn? })`
     - `getProcessedFileUrl({ pipelineRunId, expiresIn? })`
-
-    ```ts
-    // Example
-    const runs = await filefeed.pipelineRuns.list({ status: 'completed', limit: 25 });
-    const data = await filefeed.pipelineRuns.getData({ pipelineRunId: runs.data[0].id, limit: 1000 });
-    await filefeed.pipelineRuns.ack({ pipelineRunId: runs.data[0].id });
-    ```
-
-    <Tip>
-    See API Reference: [/api-reference/introduction](/api-reference/introduction)
-    </Tip>
   </Accordion>
 
   <Accordion icon="users" title="clients">
     - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `testConnection(id)`
-
-    ```ts
-    const client = await filefeed.clients.create({ name: 'My Client', sftpUsername: 'user', sftpPassword: 'pass' });
-    const ok = await filefeed.clients.testConnection(client.id);
-    ```
-
-    <Tip>
-    See API Reference: [/api-reference/introduction](/api-reference/introduction)
-    </Tip>
   </Accordion>
 
   <Accordion icon="database" title="schemas">
     - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `validate({ schemaId, data })`
-
-    ```ts
-    const schema = await filefeed.schemas.create({ name: 'Employee', fields: [{ name: 'id', type: 'string', required: true }] });
-    const result = await filefeed.schemas.validate({ schemaId: schema.id, data: { id: '123' } });
-    ```
-
-    <Tip>
-    See API Reference: [/api-reference/introduction](/api-reference/introduction)
-    </Tip>
   </Accordion>
 
   <Accordion icon="shuffle" title="pipelines">
     - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `toggleActive(id)`
-
-    ```ts
-    const pipeline = await filefeed.pipelines.create({ name: 'Employees', clientId: 'cl_123', schemaId: 'sc_123', mappings: [] });
-    await filefeed.pipelines.toggleActive(pipeline.id);
-    ```
-
-    <Tip>
-    See API Reference: [/api-reference/introduction](/api-reference/introduction)
-    </Tip>
   </Accordion>
 
   <Accordion icon="bell" title="webhooks">
     - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `listDeliveries(params)`
-
-    ```ts
-    const webhook = await filefeed.webhooks.create({ name: 'Success', url: 'https://example.com/hook', eventType: 'success' });
-    const deliveries = await filefeed.webhooks.listDeliveries({ webhookId: webhook.id, limit: 50 });
-    ```
-
-    <Tip>
-    See API Reference: [/api-reference/introduction](/api-reference/introduction)
-    </Tip>
   </Accordion>
 </AccordionGroup>
 
