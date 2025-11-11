@@ -37,35 +37,39 @@ FileFeed streamlines file-based integrations through two primary paths:
 2. Map/validate fields and preview results
 3. Submit to your backend to persist/process
 
-<Note>
-Learn more: /embedded-importers/overview · /embedded-importers/react-sdk · /embedded-importers/configuration
-</Note>
+<CardGroup cols={3}>
+  <Card title="Overview" icon="book-open" href="/embedded-importers/overview">
+    High-level concepts and flow.
+  </Card>
+  <Card title="React SDK" icon="react" href="/embedded-importers/react-sdk">
+    Embed the importer in your app.
+  </Card>
+  <Card title="Configuration" icon="gear" href="/embedded-importers/configuration">
+    Workbooks, fields, transforms, validations.
+  </Card>
+</CardGroup>
 
 ## Automated Flows
 
 ### Building Blocks
 
-### Clients
-- Represents a data source (partner, vendor, tenant)
-- Has dedicated SFTP space and credentials
-- Isolated from other clients
-
-### Schemas
-- Define expected structure and validation rules
-- Ensure incoming files conform to your target model
-
-### Pipelines
-- Connect a client to a schema
-- Define mappings and optional transformations
-- Create dedicated SFTP folders for uploads
-
-### Pipeline Runs
-- Each processed file creates a pipeline run
-- Expose status, metadata, and processed data retrieval
-
-### Webhooks
-- Notify your system about pipeline events
-- Sign payloads for security (HMAC)
+<CardGroup cols={3}>
+  <Card title="Clients" icon="users" href="/automated-flows/sftp-flow#2-clients">
+    Dedicated SFTP space and credentials per data source.
+  </Card>
+  <Card title="Schemas" icon="database" href="/automated-flows/sftp-flow#3-schemas">
+    Define fields and validation to ensure consistent data.
+  </Card>
+  <Card title="Pipelines" icon="shuffle" href="/automated-flows/sftp-flow#4-pipelines">
+    Connect client + schema, add mappings and transforms.
+  </Card>
+  <Card title="Pipeline Runs" icon="activity" href="/automated-flows/sftp-flow#1-retrieving-files-by-pipeline-run-id">
+    Per-file processing with status and data retrieval.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/automated-flows/sftp-flow#1-understanding-webhooks">
+    Event notifications with signed payloads.
+  </Card>
+</CardGroup>
 
 <Note>
 Use webhooks to trigger data syncs. Use the REST API/SDK to fetch full processed data.
@@ -81,9 +85,3 @@ Use webhooks to trigger data syncs. Use the REST API/SDK to fetch full processed
     Best for backend integrations, SFTP workflows, or scheduled data ingestion.
   </Card>
 </Columns>
-
-## Next Steps
-
-- **Frontend**: Start with the React SDK → `/embedded-importers/react-sdk`
-- **Backend**: Configure the SFTP Flow → `/automated-flows/sftp-flow`
-- **Programmatic**: Use the API Library → `/api-library/overview`

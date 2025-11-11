@@ -37,14 +37,6 @@
               "automated-flows/sftp-flow",
               "api-library/overview"
             ]
-          },
-          {
-            "group": "Guides",
-            "pages": [
-              "guides/syncing-pipeline-data",
-              "guides/handling-errors",
-              "guides/going-to-production"
-            ]
           }
         ]
       },

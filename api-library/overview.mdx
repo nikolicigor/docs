@@ -11,11 +11,45 @@ The `@filefeed/sdk` package provides a type-safe client for the FileFeed API.
 - Resources: Pipeline Runs, Clients, Schemas, Pipelines, Webhooks
 - Pagination helpers and typed responses
 
+## Quick links
+
+<CardGroup cols={3}>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Explore endpoints with the API Playground.
+  </Card>
+  <Card title="Syncing Data" icon="repeat" href="/guides/syncing-pipeline-data">
+    Fetch processed data and acknowledge runs.
+  </Card>
+  <Card title="Handling Errors" icon="circle-exclamation" href="/guides/handling-errors">
+    Retry patterns and structured error handling.
+  </Card>
+</CardGroup>
+
 ## Installation
+
+<Tabs>
+  <Tab title="npm">
 
 ```bash
 npm install @filefeed/sdk
 ```
+
+  </Tab>
+  <Tab title="yarn">
+
+```bash
+yarn add @filefeed/sdk
+```
+
+  </Tab>
+  <Tab title="pnpm">
+
+```bash
+pnpm add @filefeed/sdk
+```
+
+  </Tab>
+</Tabs>
 
 ## Requirements
 - Node.js >= 18
@@ -32,7 +66,7 @@ const runs = await filefeed.pipelineRuns.list({ status: 'completed', limit: 50 }
 ```
 
 ## Next steps
-- Call endpoints with the API Reference → [/api-reference/introduction](/api-reference/introduction)
+- Call endpoints with the [API Reference](/api-reference/introduction)
 
 ## Resources and methods
 
