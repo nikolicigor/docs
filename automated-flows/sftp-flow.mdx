@@ -243,7 +243,7 @@ All webhook requests include a signature to verify authenticity:
 
 - Requests contain an `x-sftpsync-signature` header
 - The signature is an HMAC-SHA256 hash of the request body using your webhook secret
-- The secret can be found in the webhook configuration section of your dashboard
+- The secret can be found in the webhook configuration section of your dashboard (Dashboard -> Webhooks -> Configuration -> View Configuration button -> Get secret)
 
 ### 4. Example (Node.js)
 
@@ -375,29 +375,18 @@ All requests require an API key. Store it securely and never commit it.
 Use this checklist to ensure your FileFeed integration is properly configured 
 and ready for production use.
 
-### Setup
+### Step-by-step
 
-- [ ] Obtain your API key from "My Account → Security Settings → API Key"
-- [ ] Create a webhook endpoint and register it in the FileFeed dashboard
-- [ ] Get your webhook secret from the webhook configuration page
-- [ ] Implement signature verification for webhook security
-
-### Configuration
-
-- [ ] Create client accounts for each data source
-- [ ] Generate SFTP credentials for each client
-- [ ] Define schemas for expected data formats
-- [ ] Create pipelines with proper field mappings
-- [ ] Upload starter files with correct headers
-- [ ] Set up webhook URLs for notifications
-
-### Production
-
-- [ ] Test file uploads and processing
-- [ ] Store API keys securely
-- [ ] Set up monitoring for webhook delivery failures
-- [ ] Test error handling scenarios
-- [ ] Validate data accuracy with sample files
+- [ ] Get API key (Dashboard → My Account → Security Settings)
+- [ ] Create Client (SFTP credentials)
+- [ ] Define Schema (fields, validation)
+- [ ] Create Webhook (Dashboard → Webhooks)
+- [ ] Create and activate Pipeline (link client + schema; mappings/transforms)
+- [ ] [Register Webhook](/automated-flows/sftp-flow#4-example-node-js) ([store secret; verify HMAC signature](/automated-flows/sftp-flow#3-webhook-security)) 
+- [ ] Upload a sample file and confirm run "completed"
+- [ ] Retrieve processed data and persist (SDK or REST)
+- [ ] Acknowledge the pipeline run (OPTIONAL)
+- [ ] Monitor runs and webhook deliveries; set alerts
 
 <Tip>
 Once you've completed all items in this checklist, your FileFeed integration 
