@@ -34,9 +34,7 @@
             "group": "Automated Flows",
             "pages": [
               "automated-flows/overview",
-              "automated-flows/sftp-setup",
-              "automated-flows/webhooks",
-              "automated-flows/monitoring",
+              "automated-flows/sftp-flow",
               "api-library/overview"
             ]
           },
