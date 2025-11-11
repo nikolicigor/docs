@@ -34,7 +34,7 @@
             "group": "Automated Flows",
             "pages": [
               "automated-flows/overview",
-              "automated-flows/sftp-flow",
+              "automated-flows/sftp",
               "api-library/overview"
             ]
           }
