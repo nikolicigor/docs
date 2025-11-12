@@ -1,8 +1,9 @@
-<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" width="174.0" height="42" viewBox="0 0 174.0 42" fill="none"><ns0:style>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" width="340.0" height="42" viewBox="0 0 340.0 42" fill="none" style="overflow: visible"><ns0:style>
 .wordmark { fill: #111827; font-family: 'Human Sans', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+.docs { fill: #2563eb; }
 @media (prefers-color-scheme: dark) {
   .wordmark { fill: #FFFFFF; }
 }
 </ns0:style><ns0:g transform="translate(1,1) scale(1.4285714285714286)"><ns0:rect width="28" height="28" rx="6" fill="#2563eb" />
   <ns0:path d="M8 14h12M14 8v12" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-</ns0:g><ns0:text x="57" y="22.5" class="wordmark" font-size="26.400000000000002" font-weight="700" dominant-baseline="middle">FileFeed</ns0:text></ns0:svg>
+</ns0:g><ns0:text x="57" y="22.5" class="wordmark" font-size="26.400000000000002" font-weight="700" dominant-baseline="middle"><ns0:tspan>FileFeed</ns0:tspan><ns0:tspan class="docs"> DOCS</ns0:tspan></ns0:text></ns0:svg>
