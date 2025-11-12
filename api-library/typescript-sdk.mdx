@@ -11,7 +11,7 @@ For endpoint details and payload schemas, see the API Reference.
 
 <AccordionGroup>
   <Accordion icon="server" title="pipelineRuns">
-    - `list(params)` – filter by status, client, pipeline, paginate
+    - `list(params)` – filter by status, client, pipeline, pipelineName, paginate
     - `retrieve(id)` – get a single run
     - `getData({ pipelineRunId, offset?, limit? })` – retrieve processed rows
     - `ack({ pipelineRunId })` – mark as processed
@@ -29,7 +29,7 @@ For endpoint details and payload schemas, see the API Reference.
   </Accordion>
 
   <Accordion icon="shuffle" title="pipelines">
-    - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `toggleActive(id)`
+    - `list({ clientId?, clientName? })` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `toggleActive(id)`
   </Accordion>
 
   <Accordion icon="bell" title="webhooks">

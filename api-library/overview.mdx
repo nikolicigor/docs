@@ -128,7 +128,7 @@ For endpoint details and payload schemas, see the API Reference.
 
     | Method | Signature | Description |
     |---|---|---|
-    | list | `list()` | List pipelines. |
+    | list | `list({ clientId?, clientName? })` | List pipelines. |
     | retrieve | `retrieve(id)` | Get a pipeline. |
     | create | `create(params)` | Create a pipeline (mappings/transforms). |
     | update | `update(id, params)` | Update pipeline configuration. |
@@ -150,7 +150,7 @@ For endpoint details and payload schemas, see the API Reference.
 
     | Method | Signature | Description |
     |---|---|---|
-    | list | `list({ status?, clientId?, pipelineId?, page?, limit? })` | Paginated runs. Filter by status/client/pipeline/ids. |
+    | list | `list({ status?, clientId?, pipelineId?, pipelineName?, page?, limit? })` | Paginated runs. Filter by status/client/pipeline/ids. |
     | retrieve | `retrieve(id)` | Get a single pipeline run. |
     | getData | `getData({ pipelineRunId, offset?, limit? })` | Paginated processed rows (offset-based, up to 1000 per page). |
     | ack | `ack({ pipelineRunId })` | Mark run as processed (idempotent). |

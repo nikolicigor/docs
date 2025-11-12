@@ -32,6 +32,7 @@
           { "name": "status", "in": "query", "schema": { "$ref": "#/components/schemas/PipelineRunStatus" } },
           { "name": "model", "in": "query", "schema": { "type": "string" } },
           { "name": "clientName", "in": "query", "schema": { "type": "string" } },
+          { "name": "pipelineName", "in": "query", "schema": { "type": "string" }, "description": "Filter by pipeline name (partial, case-insensitive)." },
           { "name": "id", "in": "query", "schema": { "type": "array", "items": { "type": "string" } }, "style": "form", "explode": true }
         ],
         "responses": {
@@ -174,7 +175,15 @@
     },
 
     "/pipelines": {
-      "get": { "tags": ["Pipelines"], "summary": "List pipelines", "responses": { "200": { "description": "Pipelines", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Pipeline" } } } } } } },
+      "get": {
+        "tags": ["Pipelines"],
+        "summary": "List pipelines",
+        "parameters": [
+          { "name": "clientId", "in": "query", "schema": { "type": "string" }, "description": "Filter by client ID." },
+          { "name": "clientName", "in": "query", "schema": { "type": "string" }, "description": "Filter by client name (partial, case-insensitive)." }
+        ],
+        "responses": { "200": { "description": "Pipelines", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Pipeline" } } } } } }
+      },
       "post": { "tags": ["Pipelines"], "summary": "Create pipeline", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePipelineParams" } } } }, "responses": { "200": { "description": "Pipeline", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pipeline" } } } } } }
     },
     "/pipelines/{id}": {
