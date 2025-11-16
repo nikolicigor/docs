@@ -60,11 +60,11 @@
   },
   "logo": {
     "light": "/logo/filefeed-logo-auto.svg",
-    "dark": "/logo/filefeed-logo-auto.svg"
+    "dark": "/logo/dark.svg"
   },
   "fonts": {
-    "heading": { "family": "Inter" },
-    "body": { "family": "Inter" }
+    "heading": { "family": "Noto Sans" },
+    "body": { "family": "Noto Sans" }
   },
   "navbar": {
     "links": [
