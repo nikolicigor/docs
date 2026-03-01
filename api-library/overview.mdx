@@ -8,7 +8,7 @@ description: "TypeScript SDK for programmatic access to FileFeed"
 The `@filefeed/sdk` package provides a type-safe client for the FileFeed API.
 
 - Authentication via API key
-- Resources: Pipeline Runs, Clients, Schemas, Pipelines, Webhooks
+- Resources: Pipeline Runs, Clients, Schemas, Pipelines, Webhooks, Outbound Uploads
 - Pagination helpers and typed responses
 
 ## Quick links
@@ -190,6 +190,34 @@ For endpoint details and payload schemas, see the API Reference.
     const hook = await filefeed.webhooks.create({ name: 'Pipeline events', url: 'https://example.com/webhooks/filefeed', eventType: 'GENERAL' });
     const deliveries = await filefeed.webhooks.listDeliveries({ webhookId: hook.id, page: 1, limit: 50 });
     ```
+  </Accordion>
+
+  <Accordion icon="arrow-up-from-bracket" title="outbound">
+    Push JSON data into outbound pipelines via multipart uploads.
+
+    | Method | Signature | Description |
+    |---|---|---|
+    | initUpload | `initUpload(params)` | Create an upload session. |
+    | uploadPart | `uploadPart(uploadId, partNumber, params)` | Upload one JSON array part. |
+    | completeUpload | `completeUpload(uploadId, params)` | Finalize and trigger processing. |
+    | abortUpload | `abortUpload(uploadId)` | Cancel and cleanup parts. |
+    | getUploadStatus | `getUploadStatus(uploadId)` | Check session progress. |
+    | uploadJson | `uploadJson(params)` | Convenience: chunk, upload, and complete in one call. |
+
+    **Common workflows**
+    - Push data from your backend into a pipeline
+    - Chunk large datasets and upload in parts
+    - Use `uploadJson()` for simple one-shot uploads
+
+    ```ts
+    const result = await filefeed.outbound.uploadJson({
+      clientName: 'acme-corp',
+      pipelineName: 'employee-sync',
+      data: [{ remoteId: 'E001', firstName: 'Alice', lastName: 'Smith' }],
+    });
+    ```
+
+    See the [Outbound Flow guide](/automated-flows/outbound) for the full walkthrough.
   </Accordion>
 </AccordionGroup>
 

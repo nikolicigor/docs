@@ -1,0 +1,213 @@
+---
+title: "Outbound (API) Flow"
+description: "Push data into FileFeed programmatically via the outbound multipart upload API"
+---
+
+## What is the Outbound Flow?
+
+The **outbound flow** lets you push JSON data into FileFeed through the API instead of uploading files via SFTP. It uses the same pipeline infrastructure — schemas, mappings, transforms, webhooks — but the entry point is an HTTP API call rather than a file drop.
+
+<Columns cols={2}>
+  <Card title="SFTP (Inbound)" icon="server">
+    Client uploads a file to SFTP → FileFeed detects and processes it.
+  </Card>
+  <Card title="API (Outbound)" icon="arrow-up-from-bracket">
+    Your backend pushes JSON data via API → FileFeed processes it.
+  </Card>
+</Columns>
+
+## When to use
+
+- You already have the data in your backend and want to push it into a pipeline
+- You don't want to manage SFTP connections for a particular data source
+- You need programmatic control over when data enters the pipeline
+- You're building an integration that produces data (not receives files)
+
+## Prerequisites
+
+Before using the outbound flow, you need:
+
+1. **A Client** — with an `awsUserName` (created in the dashboard or via API)
+2. **A Schema** — defining the target data structure
+3. **An Outbound Pipeline** — with `direction: "outbound"`, linking the client and schema with field mappings
+4. **An API key** — user-type key for authentication
+
+<Note>
+The pipeline **must** have `direction` set to `"outbound"`. Inbound pipelines will be rejected by the upload endpoints.
+</Note>
+
+## Architecture
+
+```
+Your Backend
+  → POST /outbound/uploads (init session)
+    → PUT .../parts/:n (upload JSON chunks)
+      → POST .../complete (combine & trigger processing)
+        → Pipeline (Schema + Mappings + Transforms)
+          → Pipeline Run (status: completed)
+            → Webhook Event (if configured)
+              → Fetch processed data via API/SDK
+```
+
+## How it works
+
+The outbound upload uses a **multipart flow** similar to AWS S3 multipart uploads:
+
+### Step 1: Initialize
+
+Create an upload session specifying the client, pipeline, number of parts, and optional filename.
+
+```ts
+const init = await filefeed.outbound.initUpload({
+  clientName: 'acme-corp',           // awsUserName of the client
+  pipelineName: 'employee-sync',     // must be direction: "outbound"
+  totalParts: 3,
+  filename: 'employees.json',        // optional
+});
+// init.uploadId → use this for subsequent calls
+```
+
+### Step 2: Upload parts
+
+Upload each part as a JSON array of objects. Parts are numbered 1 through `totalParts`.
+
+```ts
+await filefeed.outbound.uploadPart(init.uploadId, 1, {
+  data: [
+    { remoteId: 'E001', firstName: 'Alice', lastName: 'Smith' },
+    { remoteId: 'E002', firstName: 'Bob', lastName: 'Jones' },
+  ],
+});
+
+await filefeed.outbound.uploadPart(init.uploadId, 2, {
+  data: [
+    { remoteId: 'E003', firstName: 'Charlie', lastName: 'Brown' },
+  ],
+});
+
+// ... upload remaining parts
+```
+
+<Tip>
+Each part's `data` must be a JSON array. Parts can have different sizes. The objects should contain the **source** field names that match your pipeline's field mappings.
+</Tip>
+
+### Step 3: Complete
+
+Finalize the upload by listing all parts. FileFeed combines them into one file, stores it in S3, and triggers pipeline processing.
+
+```ts
+const result = await filefeed.outbound.completeUpload(init.uploadId, {
+  parts: [
+    { partNumber: 1 },
+    { partNumber: 2 },
+  ],
+});
+// result.message → "Upload ... completed. Processing started for employees.json"
+```
+
+### Step 4: Consume results
+
+After processing completes, a **pipeline run** is created. Use the standard pipeline runs API to fetch results:
+
+```ts
+const runs = await filefeed.pipelineRuns.list({
+  pipelineName: 'employee-sync',
+  status: 'completed',
+  limit: 1,
+});
+
+const data = await filefeed.pipelineRuns.getData({
+  pipelineRunId: runs.data[0].id,
+});
+
+console.log(data.data); // transformed records
+
+// Acknowledge when done
+await filefeed.pipelineRuns.ack({ pipelineRunId: runs.data[0].id });
+```
+
+## Quick path: `uploadJson` helper
+
+For most use cases, the SDK provides a convenience method that handles chunking, part uploads, and completion in one call:
+
+```ts
+import FileFeed from '@filefeed/sdk';
+
+const filefeed = new FileFeed({ apiKey: process.env.FILEFEED_API_KEY! });
+
+const result = await filefeed.outbound.uploadJson({
+  clientName: 'acme-corp',
+  pipelineName: 'employee-sync',
+  data: [
+    { remoteId: 'E001', firstName: 'Alice', lastName: 'Smith', workEmail: 'alice@acme.com' },
+    { remoteId: 'E002', firstName: 'Bob',   lastName: 'Jones', workEmail: 'bob@acme.com' },
+    // ... any number of records
+  ],
+  chunkSize: 1000,                // records per part (default: 1000)
+  filename: 'employees.json',     // optional
+});
+```
+
+## Checking upload status
+
+At any point during the upload, you can check progress:
+
+```ts
+const status = await filefeed.outbound.getUploadStatus(uploadId);
+// status.status       → "initiated" | "uploading" | "completed" | "aborted"
+// status.uploadedParts → number of parts uploaded so far
+// status.totalParts    → total expected
+```
+
+## Aborting an upload
+
+Cancel an in-progress upload and clean up temporary parts:
+
+```ts
+await filefeed.outbound.abortUpload(uploadId);
+```
+
+After aborting:
+- All temporary part data is deleted from storage
+- The session is marked as `aborted`
+- Further uploads to this session are rejected
+
+## API endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/outbound/uploads` | Initialize upload session |
+| `PUT` | `/outbound/uploads/:uploadId/parts/:partNumber` | Upload one part |
+| `POST` | `/outbound/uploads/:uploadId/complete` | Complete and trigger processing |
+| `POST` | `/outbound/uploads/:uploadId/abort` | Abort and cleanup |
+| `GET` | `/outbound/uploads/:uploadId` | Get upload status |
+
+## Upload states
+
+```
+initiated → uploading → completed
+                ↘ aborted
+```
+
+| State | Meaning |
+|-------|---------|
+| `initiated` | Session created, no parts uploaded yet |
+| `uploading` | At least one part has been uploaded |
+| `completed` | All parts combined, processing triggered |
+| `aborted` | Upload cancelled, parts cleaned up |
+
+## Integration checklist
+
+- [ ] Create Client with SFTP credentials (provides the `clientName` / `awsUserName`)
+- [ ] Define Schema (target fields and validation)
+- [ ] Create Pipeline with `direction: "outbound"` (link client + schema, define mappings)
+- [ ] Get API key (Dashboard → My Account → Security Settings)
+- [ ] Push data using `uploadJson()` or the manual multipart flow
+- [ ] Poll or listen for pipeline run completion
+- [ ] Fetch processed data and persist to your system
+- [ ] Acknowledge the pipeline run
+
+<Tip>
+The outbound flow uses the same pipeline runs, webhooks, and data retrieval as the SFTP flow. The only difference is how data enters the system.
+</Tip>

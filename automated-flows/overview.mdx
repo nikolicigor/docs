@@ -46,12 +46,11 @@ Automated Flows allow you to set up file processing workflows that run automatic
 
 ## Supported Integrations
 
-- **SFTP** - Secure file transfer protocol
-- **FTP** - Coming soon
-- **API Endpoints** - Coming soon
+- **SFTP (Inbound)** - Clients upload files to dedicated SFTP folders
+- **API (Outbound)** - Your backend pushes JSON data via the multipart upload API
+- **Webhooks** - Receive notifications when files are processed
 - **Cloud Storage** - Coming soon
 - **Email** - Coming soon
-- **Webhooks** - Coming soon
 
 ## Flow Types
 
@@ -66,15 +65,30 @@ Monitor directories or endpoints continuously for new files
 
 ## Architecture
 
+### Inbound (SFTP)
+
 ```
 SFTP Upload (Client)
   → FileFeed SFTP
     → Pipeline (Schema + Mappings + Transforms)
       → Processing & Validation
         → Webhook Event (signed)
-          → Your Webhook Endpoint
-            → Fetch processed data via API/SDK
-              → Persist to your DB
+          → Fetch processed data via API/SDK
+            → Persist to your DB
+```
+
+### Outbound (API)
+
+```
+Your Backend
+  → POST /outbound/uploads (init)
+    → PUT .../parts/:n (upload JSON chunks)
+      → POST .../complete (combine & trigger)
+        → Pipeline (Schema + Mappings + Transforms)
+          → Processing & Validation
+            → Webhook Event (signed)
+              → Fetch processed data via API/SDK
+                → Persist to your DB
 ```
 
 <Tip>
@@ -83,9 +97,12 @@ Respond quickly to webhooks and process asynchronously (queue/worker). Use the S
 
 ## Next Steps
 
-<CardGroup cols={2}>
-  <Card title="SFTP Flow" icon="server" href="/automated-flows/sftp-flow">
-    Complete guide: setup, webhooks, monitoring, and API.
+<CardGroup cols={3}>
+  <Card title="SFTP Flow" icon="server" href="/automated-flows/sftp">
+    Inbound: SFTP setup, webhooks, monitoring.
+  </Card>
+  <Card title="Outbound Flow" icon="arrow-up-from-bracket" href="/automated-flows/outbound">
+    Push JSON data via API multipart uploads.
   </Card>
   <Card title="API Library" icon="code" href="/api-library/overview">
     Use the TypeScript SDK to sync data.
@@ -93,8 +110,9 @@ Respond quickly to webhooks and process asynchronously (queue/worker). Use the S
 </CardGroup>
 
 ### Checklist
-- [ ] Create Client (SFTP credentials)
+- [ ] Create Client (SFTP credentials / awsUserName)
 - [ ] Define Schema (fields & validation)
-- [ ] Create Pipeline (mappings & transforms)
+- [ ] Create Pipeline (mappings & transforms; set `direction` to `inbound` or `outbound`)
 - [ ] Register Webhook (store secret, verify signature)
+- [ ] Upload data via SFTP (inbound) or API (outbound)
 - [ ] Fetch processed data and persist

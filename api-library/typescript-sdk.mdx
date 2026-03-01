@@ -35,6 +35,17 @@ For endpoint details and payload schemas, see the API Reference.
   <Accordion icon="bell" title="webhooks">
     - `list()` · `retrieve(id)` · `create(params)` · `update(id, params)` · `remove(id)` · `listDeliveries(params)`
   </Accordion>
+
+  <Accordion icon="arrow-up-from-bracket" title="outbound">
+    - `initUpload(params)` - Create upload session
+    - `uploadPart(uploadId, partNumber, params)` - Upload one JSON part
+    - `completeUpload(uploadId, params)` - Finalize and trigger processing
+    - `abortUpload(uploadId)` - Cancel and cleanup
+    - `getUploadStatus(uploadId)` - Check progress
+    - `uploadJson(params)` - Convenience: chunk + upload + complete in one call
+
+    See [Outbound Flow](/automated-flows/outbound) for the full guide.
+  </Accordion>
 </AccordionGroup>
 
 ## Example: Paginate Data

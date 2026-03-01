@@ -8,15 +8,15 @@ description: "Understand FileFeed fundamentals: Clients, Schemas, Pipelines, Pip
 FileFeed streamlines file-based integrations through two primary paths:
 
 - **Embedded Importers**: In-app data import experiences (React SDK)
-- **Automated Flows**: Backend/SFTP-driven automation with webhooks and API
+- **Automated Flows**: Backend-driven automation via SFTP (inbound) or API (outbound), with webhooks and SDK
 
 ## Compare at a glance
 
 | Aspect | Embedded Importers | Automated Flows |
 |---|---|---|
-| Trigger | User-initiated in-app | Scheduled or external (e.g., SFTP uploads) |
+| Trigger | User-initiated in-app | SFTP upload, API push, or scheduled |
 | Typical user | Product/Operations teams | Backend/Integrations teams |
-| Data entry | UI mapping, preview, validate | File drop to SFTP or other source |
+| Data entry | UI mapping, preview, validate | File drop to SFTP or JSON push via API |
 | Validation | In-app field + custom rules | Schema validation during processing |
 | Processing | Client app | FileFeed pipelines + your backend via webhooks |
 | Output | Records to your app | Webhook event + fetch processed data via API/SDK |
@@ -61,7 +61,10 @@ FileFeed streamlines file-based integrations through two primary paths:
     Define fields and validation to ensure consistent data.
   </Card>
   <Card title="Pipelines" icon="shuffle" href="/automated-flows/sftp-flow#4-pipelines">
-    Connect client + schema, add mappings and transforms.
+    Connect client + schema, add mappings and transforms. Supports inbound (SFTP) and outbound (API) directions.
+  </Card>
+  <Card title="Outbound Uploads" icon="arrow-up-from-bracket" href="/automated-flows/outbound">
+    Push JSON data into pipelines via API instead of SFTP.
   </Card>
   <Card title="Pipeline Runs" icon="activity" href="/automated-flows/sftp-flow#1-retrieving-files-by-pipeline-run-id">
     Per-file processing with status and data retrieval.
