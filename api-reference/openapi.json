@@ -13,7 +13,8 @@
     { "name": "Clients" },
     { "name": "Schemas" },
     { "name": "Pipelines" },
-    { "name": "Webhooks" }
+    { "name": "Webhooks" },
+    { "name": "Outbound Uploads" }
   ],
   "security": [
     { "ApiKeyAuth": [] }
@@ -77,7 +78,7 @@
           { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 1000 } }
         ],
         "responses": {
-          "200": { "description": "Processed data page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PipelineRunDataResponse" }, "example": { "data": [ { "id": "123", "email": "a@b.com" } ], "metadata": { "pipelineRunId": "run_123", "offset": 0, "limit": 1000, "hasMore": false } } } } }
+          "200": { "description": "Processed data page", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PipelineRunDataResponse" }, "example": { "data": [ { "id": "123", "email": "a@b.com" } ], "pagination": { "total": 1, "offset": 0, "limit": 1000, "returned": 1 } } } } }
         }
       }
     },
@@ -220,6 +221,111 @@
           "200": { "description": "Paginated deliveries", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaginatedWebhookDeliveries" }, "example": { "data": [ { "id": "wd_1", "success": true, "statusCode": 200 } ], "pagination": { "page": 1, "limit": 50, "total": 1, "totalPages": 1 } } } } }
         }
       }
+    },
+
+    "/outbound/uploads": {
+      "post": {
+        "tags": ["Outbound Uploads"],
+        "summary": "Initialize an outbound multipart upload session",
+        "operationId": "initOutboundUpload",
+        "description": "Creates a new upload session for pushing JSON data into an outbound pipeline. The pipeline must have `direction: \"outbound\"`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/InitOutboundUploadParams" },
+              "example": { "clientName": "acme-corp", "pipelineName": "employee-sync", "totalParts": 3, "filename": "employees.json" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Upload session created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InitOutboundUploadResponse" }, "example": { "uploadId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "status": "initiated", "totalParts": 3, "filename": "employees.json" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/outbound/uploads/{uploadId}/parts/{partNumber}": {
+      "put": {
+        "tags": ["Outbound Uploads"],
+        "summary": "Upload one part for an outbound upload session",
+        "operationId": "uploadOutboundPart",
+        "description": "Upload a single part (JSON array of objects). Part numbers are 1-based and must not exceed `totalParts`.",
+        "parameters": [
+          { "name": "uploadId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Upload session ID from initUpload." },
+          { "name": "partNumber", "in": "path", "required": true, "schema": { "type": "integer", "minimum": 1 }, "description": "1-based part number." }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UploadOutboundPartParams" },
+              "example": { "data": [{ "remoteId": "E001", "firstName": "Alice", "lastName": "Smith" }] }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Part uploaded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UploadOutboundPartResponse" }, "example": { "uploadId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "partNumber": 1, "status": "uploading", "uploadedParts": 1, "totalParts": 3 } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/outbound/uploads/{uploadId}/complete": {
+      "post": {
+        "tags": ["Outbound Uploads"],
+        "summary": "Complete outbound multipart upload and trigger processing",
+        "operationId": "completeOutboundUpload",
+        "description": "Combines all uploaded parts into one file, stores it in S3, and triggers pipeline processing. The number of parts listed must match `totalParts`.",
+        "parameters": [
+          { "name": "uploadId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CompleteOutboundUploadParams" },
+              "example": { "parts": [{ "partNumber": 1 }, { "partNumber": 2 }, { "partNumber": 3 }] }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Upload completed and processing started", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CompleteOutboundUploadResponse" }, "example": { "message": "Upload a1b2c3d4 completed. Processing started for employees.json", "filename": "employees.json" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/outbound/uploads/{uploadId}/abort": {
+      "post": {
+        "tags": ["Outbound Uploads"],
+        "summary": "Abort outbound multipart upload and cleanup temp parts",
+        "operationId": "abortOutboundUpload",
+        "description": "Cancels an in-progress upload session, deletes all temporary parts from storage, and marks the session as aborted. Further uploads to this session will be rejected.",
+        "parameters": [
+          { "name": "uploadId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Upload aborted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" }, "example": { "message": "Upload a1b2c3d4 aborted and cleaned up" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/outbound/uploads/{uploadId}": {
+      "get": {
+        "tags": ["Outbound Uploads"],
+        "summary": "Get outbound multipart upload status",
+        "operationId": "getOutboundUploadStatus",
+        "description": "Returns the current state of an upload session including which parts have been uploaded.",
+        "parameters": [
+          { "name": "uploadId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Upload status", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OutboundUploadStatusResponse" }, "example": { "uploadId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "status": "uploading", "clientName": "acme-corp", "pipelineName": "employee-sync", "filename": "employees.json", "totalParts": 3, "uploadedParts": 2, "uploadedPartNumbers": [1, 2], "createdAt": "2026-03-01T12:00:00.000Z", "updatedAt": "2026-03-01T12:01:00.000Z" } } } },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
     }
   },
   "components": {
@@ -272,6 +378,7 @@
           "mimetype": { "type": "string" },
           "metadata": { "type": "object", "additionalProperties": true },
           "status": { "$ref": "#/components/schemas/PipelineRunStatus" },
+          "pipelineDirection": { "type": "string", "enum": ["inbound", "outbound"], "description": "Direction of the pipeline that produced this run." },
           "errorMessage": { "type": "string" },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" },
@@ -297,15 +404,13 @@
         "type": "object",
         "properties": {
           "data": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
-          "metadata": {
+          "pagination": {
             "type": "object",
             "properties": {
-              "pipelineRunId": { "type": "string" },
-              "filename": { "type": "string" },
-              "totalRecords": { "type": "integer" },
+              "total": { "type": "integer", "description": "Total number of records in the pipeline run." },
               "offset": { "type": "integer" },
               "limit": { "type": "integer" },
-              "hasMore": { "type": "boolean" }
+              "returned": { "type": "integer", "description": "Number of records returned in this page." }
             }
           }
         },
@@ -439,6 +544,7 @@
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
+          "direction": { "type": "string", "enum": ["inbound", "outbound"], "default": "inbound", "description": "Pipeline direction. Outbound pipelines accept data via the Outbound Uploads API." },
           "mappings": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/FieldMapping" } }, { "type": "object", "additionalProperties": true } ] },
           "isActive": { "type": "boolean" },
           "workspaceId": { "type": "string" },
@@ -453,6 +559,7 @@
         "type": "object",
         "properties": {
           "name": { "type": "string" },
+          "direction": { "type": "string", "enum": ["inbound", "outbound"], "default": "inbound", "description": "Set to \"outbound\" to create a pipeline that accepts data via the Outbound Uploads API." },
           "mappings": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/FieldMapping" } }, { "type": "object", "additionalProperties": true } ] },
           "clientId": { "type": "string" },
           "schemaId": { "type": "string" },
@@ -523,6 +630,92 @@
         "type": "object",
         "properties": { "status": { "type": "string", "enum": ["acknowledged"] } },
         "required": ["status"]
+      },
+
+      "OutboundUploadState": {
+        "type": "string",
+        "enum": ["initiated", "uploading", "completed", "aborted"]
+      },
+      "InitOutboundUploadParams": {
+        "type": "object",
+        "properties": {
+          "clientName": { "type": "string", "description": "Client name (awsUserName of the client)." },
+          "pipelineName": { "type": "string", "description": "Name of the outbound pipeline (must have direction: \"outbound\")." },
+          "totalParts": { "type": "integer", "minimum": 1, "description": "Total number of parts to upload." },
+          "filename": { "type": "string", "description": "Optional final filename. Defaults to upload-{uploadId}.json." }
+        },
+        "required": ["clientName", "pipelineName", "totalParts"]
+      },
+      "InitOutboundUploadResponse": {
+        "type": "object",
+        "properties": {
+          "uploadId": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/OutboundUploadState" },
+          "totalParts": { "type": "integer" },
+          "filename": { "type": "string" }
+        },
+        "required": ["uploadId", "status", "totalParts", "filename"]
+      },
+      "UploadOutboundPartParams": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "type": "object", "additionalProperties": true }, "description": "Array of JSON objects for this part." },
+          "checksum": { "type": "string", "description": "Optional checksum for integrity validation." }
+        },
+        "required": ["data"]
+      },
+      "UploadOutboundPartResponse": {
+        "type": "object",
+        "properties": {
+          "uploadId": { "type": "string" },
+          "partNumber": { "type": "integer" },
+          "status": { "$ref": "#/components/schemas/OutboundUploadState" },
+          "uploadedParts": { "type": "integer", "description": "Number of parts uploaded so far." },
+          "totalParts": { "type": "integer" },
+          "etag": { "type": "string", "description": "Optional ETag for the uploaded part." }
+        },
+        "required": ["uploadId", "partNumber", "status", "uploadedParts", "totalParts"]
+      },
+      "CompleteOutboundUploadPart": {
+        "type": "object",
+        "properties": {
+          "partNumber": { "type": "integer", "minimum": 1 },
+          "etag": { "type": "string", "description": "Optional ETag returned by uploadPart." }
+        },
+        "required": ["partNumber"]
+      },
+      "CompleteOutboundUploadParams": {
+        "type": "object",
+        "properties": {
+          "parts": { "type": "array", "items": { "$ref": "#/components/schemas/CompleteOutboundUploadPart" }, "description": "Ordered list of all parts. Count must match totalParts." },
+          "filename": { "type": "string", "description": "Optional final filename override." }
+        },
+        "required": ["parts"]
+      },
+      "CompleteOutboundUploadResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "filename": { "type": "string" }
+        },
+        "required": ["message", "filename"]
+      },
+      "OutboundUploadStatusResponse": {
+        "type": "object",
+        "properties": {
+          "uploadId": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/OutboundUploadState" },
+          "clientName": { "type": "string" },
+          "pipelineName": { "type": "string" },
+          "filename": { "type": "string" },
+          "totalParts": { "type": "integer" },
+          "uploadedParts": { "type": "integer" },
+          "uploadedPartNumbers": { "type": "array", "items": { "type": "integer" } },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "completedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["uploadId", "status", "clientName", "pipelineName", "totalParts", "uploadedParts", "uploadedPartNumbers", "createdAt", "updatedAt"]
       }
     }
   }
