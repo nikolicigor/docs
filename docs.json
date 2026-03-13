@@ -99,6 +99,36 @@
       "linkedin": "https://linkedin.com/company/filefeed"
     }
   },
+  "redirects": [
+    {
+      "source": "/automated-flows/sftp-flow",
+      "destination": "/automated-flows/sftp"
+    },
+    {
+      "source": "/advanced-configuration",
+      "destination": "/embedded-importers/configuration"
+    },
+    {
+      "source": "/embedded-importers/advanced-configuration",
+      "destination": "/embedded-importers/configuration"
+    },
+    {
+      "source": "/guides/handling-errors",
+      "destination": "/api-library/overview"
+    },
+    {
+      "source": "/embedded-importers/integration-examples",
+      "destination": "/embedded-importers/react-sdk"
+    },
+    {
+      "source": "/guides/syncing-pipeline-data",
+      "destination": "/api-library/overview"
+    },
+    {
+      "source": "/embedded-importers/workbook-configuration",
+      "destination": "/embedded-importers/configuration"
+    }
+  ],
   "api": {
     "mdx": {
       "auth": { "method": "key", "name": "x-api-key" }
