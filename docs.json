@@ -45,6 +45,13 @@
               "mcp-server/overview",
               "mcp-server/tools"
             ]
+          },
+          {
+            "group": "Versioning",
+            "pages": [
+              "changelog",
+              "migration/v1-to-v2"
+            ]
           }
         ]
       },

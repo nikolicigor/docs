@@ -3,6 +3,14 @@ title: "SFTP Flow"
 description: "Complete guide to integrating with FileFeed through SFTP, webhooks, and REST API"
 ---
 
+<Note>
+The entity formerly called **Client** is now called **Connection** as of API
+version `2026-05-25`. Legacy `/clients` endpoints and `Client` types remain
+available — see the [migration guide](/migration/v1-to-v2). This page uses
+the new name throughout; if you're still on `2024-09-01`, mentally substitute
+"client" wherever you see "connection".
+</Note>
+
 ## SFTP Integration
 
 FileFeed provides a comprehensive SFTP-based integration platform that automates 
@@ -13,47 +21,48 @@ concepts, webhook listeners, REST API access, and implementation checklists.
 ## Core Concepts
 
 Understanding the fundamental concepts of FileFeed platform is essential for 
-successful integration. This section explains how clients, schemas, and pipelines 
+successful integration. This section explains how connections, schemas, and pipelines 
 work together to automate your file processing workflows.
 
 ### 1. Platform Overview
 
 FileFeed is designed to solve the challenge of managing file transfers and data 
-integrations across multiple clients, systems, and file formats. It provides a 
+integrations across multiple data sources, systems, and file formats. It provides a 
 centralized platform where you can:
 
-- Create dedicated SFTP spaces for each client or data source
+- Create dedicated SFTP spaces for each connection (data source)
 - Define schemas that validate incoming data files
 - Build automated pipelines that transform files into standardized formats
 - Send processed data to destination systems via webhooks or API
 - Monitor file processing and alert on errors
 
-### 2. Clients
+<a id="2-clients" />
+### 2. Connections
 
-In FileFeed, a **Client** represents an 
-organization or business entity that interacts with your system through file 
-transfers. Each client has:
+In FileFeed, a **Connection** (formerly called *Client*) represents one
+data-source endpoint — typically an organization or business entity that
+sends files to FileFeed via SFTP. Each connection has:
 
-- **Dedicated SFTP space**: A secure 
-  environment where the client can upload files
-- **SFTP credentials**: Username and 
+- **Dedicated SFTP space**: A secure
+  environment where the data source can upload files
+- **SFTP credentials**: Username and
   password for connecting to the SFTP server
-- **SFTP host**: The server address 
-  displayed on the client's page for connection
-- **Client ID**: A unique identifier 
+- **SFTP host**: The server address
+  displayed on the connection's page for connection
+- **Connection ID**: A unique identifier
   used in API calls and data routing
-- **Associated pipelines**: Workflows 
-  that process files uploaded by this client
+- **Associated pipelines**: Workflows
+  that process files uploaded into this connection
 
-Clients are isolated from each other, ensuring data privacy and security. 
-Clients can connect to their dedicated SFTP space using their assigned username 
-and password with the host specified on their configuration page.
+Connections are isolated from each other, ensuring data privacy and security.
+They connect to their dedicated SFTP space using their assigned username and
+password with the host specified on the connection's configuration page.
 
 ```json
-// Example client object
+// Example connection object (v1 callers may see this returned as a `client`)
 {
-  "clientId": "c4b3f495-5dfc-4a91-b604-a8e66ab4a220",
-  "clientName": "acme_logistics",
+  "connectionId": "c4b3f495-5dfc-4a91-b604-a8e66ab4a220",
+  "name": "acme_logistics",
   "displayName": "Acme Logistics Inc.",
   "status": "active",
   "created": "2023-05-15T10:30:00Z",
@@ -136,7 +145,7 @@ files are processed when uploaded to a specific folder. Each pipeline includes:
 - **Transformations**: Data manipulations 
   that can be applied to specific columns
 
-Each pipeline creates a dedicated folder in the client's SFTP space. When a file 
+Each pipeline creates a dedicated folder in the connection's SFTP space. When a file 
 is uploaded to this folder, it automatically triggers the processing based on the 
 defined mappings and transformations.
 
@@ -176,28 +185,28 @@ defined mappings and transformations.
 
 ### 5. Typical Workflow
 
-Here's a typical workflow in FileFeed that illustrates how clients, schemas, 
-and pipelines work together:
+Here's a typical workflow in FileFeed that illustrates how connections,
+schemas, and pipelines work together:
 
-1. **Client Setup**: You create a new 
-   client in FileFeed, which generates SFTP credentials and a dedicated SFTP space.
+1. **Connection Setup**: You create a new
+   connection in FileFeed, which generates SFTP credentials and a dedicated SFTP space.
 2. **Schema Definition**: You define a 
    schema that specifies the target data structure you want to receive after 
    processing.
 3. **Pipeline Creation**: You create a 
    pipeline and associate it with the schema. This automatically creates a 
-   dedicated folder in the client's SFTP space.
+   dedicated folder in the connection's SFTP space.
 4. **Starter File Setup**: You upload a 
-   template file with the expected header structure for the files your client 
-   will upload.
+   template file with the expected header structure for the files the
+   sending team will upload.
 5. **Field Mapping**: You define mappings 
    between source columns in the uploaded files and target fields in your schema.
 6. **Transformation Setup**: You create 
    JavaScript transformation functions to apply to specific fields.
 7. **Webhook Configuration**: You set up 
    an optional webhook URL to receive notifications when files are processed.
-8. **File Upload**: The client uploads a 
-   file to their dedicated pipeline folder in the SFTP space.
+8. **File Upload**: The sender uploads a
+   file to the dedicated pipeline folder in the SFTP space.
 9. **Automatic Processing**: FileFeed 
    detects the new file, applies the defined mappings and transformations.
 10. **Notification**: If a webhook is 
@@ -378,10 +387,10 @@ and ready for production use.
 ### Step-by-step
 
 - [ ] Get API key (Dashboard → My Account → Security Settings)
-- [ ] Create Client (SFTP credentials)
+- [ ] Create Connection (SFTP credentials)
 - [ ] Define Schema (fields, validation)
 - [ ] Create Webhook (Dashboard → Webhooks)
-- [ ] Create and activate Pipeline (link client + schema; mappings/transforms)
+- [ ] Create and activate Pipeline (link connection + schema; mappings/transforms)
 - [ ] [Register Webhook](/automated-flows/sftp-flow#4-example-node-js) ([store secret; verify HMAC signature](/automated-flows/sftp-flow#3-webhook-security)) 
 - [ ] Upload a sample file and confirm run "completed"
 - [ ] Retrieve processed data and persist (SDK or REST)

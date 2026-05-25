@@ -9,7 +9,7 @@ The **outbound flow** lets you push JSON data into FileFeed through the API inst
 
 <Columns cols={2}>
   <Card title="SFTP (Inbound)" icon="server">
-    Client uploads a file to SFTP → FileFeed detects and processes it.
+    The sender uploads a file to the connection's SFTP space → FileFeed detects and processes it.
   </Card>
   <Card title="API (Outbound)" icon="arrow-up-from-bracket">
     Your backend pushes JSON data via API → FileFeed processes it.
@@ -27,9 +27,9 @@ The **outbound flow** lets you push JSON data into FileFeed through the API inst
 
 Before using the outbound flow, you need:
 
-1. **A Client** — with an `awsUserName` (created in the dashboard or via API)
+1. **A Connection** (formerly *Client*) — with an `awsUserName`, created in the dashboard or via API
 2. **A Schema** — defining the target data structure
-3. **An Outbound Pipeline** — with `direction: "outbound"`, linking the client and schema with field mappings
+3. **An Outbound Pipeline** — with `direction: "outbound"`, linking the connection and schema with field mappings
 4. **An API key** — user-type key for authentication
 
 <Note>
@@ -55,11 +55,11 @@ The outbound upload uses a **multipart flow** similar to AWS S3 multipart upload
 
 ### Step 1: Initialize
 
-Create an upload session specifying the client, pipeline, number of parts, and optional filename.
+Create an upload session specifying the connection, pipeline, number of parts, and optional filename.
 
 ```ts
 const init = await filefeed.outbound.initUpload({
-  clientName: 'acme-corp',           // awsUserName of the client
+  clientName: 'acme-corp',           // awsUserName of the connection (field kept for back-compat)
   pipelineName: 'employee-sync',     // must be direction: "outbound"
   totalParts: 3,
   filename: 'employees.json',        // optional
@@ -199,9 +199,9 @@ initiated → uploading → completed
 
 ## Integration checklist
 
-- [ ] Create Client with SFTP credentials (provides the `clientName` / `awsUserName`)
+- [ ] Create Connection with SFTP credentials (provides the `clientName` / `awsUserName` — names kept for back-compat)
 - [ ] Define Schema (target fields and validation)
-- [ ] Create Pipeline with `direction: "outbound"` (link client + schema, define mappings)
+- [ ] Create Pipeline with `direction: "outbound"` (link connection + schema, define mappings)
 - [ ] Get API key (Dashboard → My Account → Security Settings)
 - [ ] Push data using `uploadJson()` or the manual multipart flow
 - [ ] Poll or listen for pipeline run completion
