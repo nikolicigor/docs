@@ -46,7 +46,7 @@ Automated Flows allow you to set up file processing workflows that run automatic
 
 ## Supported Integrations
 
-- **SFTP (Inbound)** - Clients upload files to dedicated SFTP folders
+- **SFTP (Inbound)** - Senders upload files to dedicated SFTP folders per connection
 - **API (Outbound)** - Your backend pushes JSON data via the multipart upload API
 - **Webhooks** - Receive notifications when files are processed
 - **Cloud Storage** - Coming soon
@@ -68,7 +68,7 @@ Monitor directories or endpoints continuously for new files
 ### Inbound (SFTP)
 
 ```
-SFTP Upload (Client)
+SFTP Upload (per Connection)
   → FileFeed SFTP
     → Pipeline (Schema + Mappings + Transforms)
       → Processing & Validation
@@ -110,7 +110,7 @@ Respond quickly to webhooks and process asynchronously (queue/worker). Use the S
 </CardGroup>
 
 ### Checklist
-- [ ] Create Client (SFTP credentials / awsUserName)
+- [ ] Create Connection (SFTP credentials / awsUserName)
 - [ ] Define Schema (fields & validation)
 - [ ] Create Pipeline (mappings & transforms; set `direction` to `inbound` or `outbound`)
 - [ ] Register Webhook (store secret, verify signature)

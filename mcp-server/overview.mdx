@@ -1,0 +1,129 @@
+---
+title: "MCP Server"
+description: "Use FileFeed with AI assistants via the Model Context Protocol"
+---
+
+## Overview
+
+The `@filefeed/mcp-server` package exposes all FileFeed SDK capabilities as **MCP (Model Context Protocol) tools**, enabling AI assistants to manage your pipelines, clients, schemas, webhooks, and data directly.
+
+<CardGroup cols={3}>
+  <Card title="Claude Desktop" icon="message-bot">
+    Chat with your FileFeed data in Claude Desktop.
+  </Card>
+  <Card title="Cursor" icon="code">
+    Manage pipelines from your IDE with Cursor.
+  </Card>
+  <Card title="VS Code" icon="window">
+    Use FileFeed tools in VS Code Copilot Chat.
+  </Card>
+</CardGroup>
+
+## What is MCP?
+
+The [Model Context Protocol](https://modelcontextprotocol.io) is an open standard that lets AI assistants call external tools. The FileFeed MCP server translates your natural language requests into FileFeed API calls — listing runs, creating pipelines, reprocessing files, and more.
+
+## Quick Start
+
+### 1. Get your API key
+
+Retrieve your API key from the FileFeed dashboard under **Profile > API Key**.
+
+### 2. Configure your AI client
+
+<Tabs>
+  <Tab title="Claude Desktop">
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "filefeed": {
+      "command": "npx",
+      "args": ["@filefeed/mcp-server"],
+      "env": {
+        "FILEFEED_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+  </Tab>
+  <Tab title="Cursor">
+
+Add to your Cursor MCP settings (`.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "filefeed": {
+      "command": "npx",
+      "args": ["@filefeed/mcp-server"],
+      "env": {
+        "FILEFEED_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+  </Tab>
+  <Tab title="VS Code">
+
+Add to your VS Code settings (`.vscode/settings.json`):
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "filefeed": {
+        "command": "npx",
+        "args": ["@filefeed/mcp-server"],
+        "env": {
+          "FILEFEED_API_KEY": "your-api-key"
+        }
+      }
+    }
+  }
+}
+```
+
+  </Tab>
+</Tabs>
+
+### 3. Start asking questions
+
+Once configured, you can ask your AI assistant things like:
+
+- *"Show me all failed pipeline runs"*
+- *"List my clients and their connection status"*
+- *"Create a new pipeline for client Acme with the Employees schema"*
+- *"Reprocess the last failed run"*
+- *"What webhooks are configured?"*
+
+## Configuration
+
+| Environment Variable | Required | Default | Description |
+|---------------------|----------|---------|-------------|
+| `FILEFEED_API_KEY` | Yes | — | Your FileFeed API key |
+| `FILEFEED_BASE_URL` | No | `https://api.sftpsync.io` | API base URL |
+| `FILEFEED_TIMEOUT_MS` | No | `30000` | Request timeout in milliseconds |
+
+You can also pass the API key via CLI flag:
+
+```bash
+filefeed-mcp --api-key your-api-key
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Available Tools" icon="wrench" href="/mcp-server/tools">
+    See all 38 tools organized by resource.
+  </Card>
+  <Card title="API Library" icon="code" href="/api-library/overview">
+    Use the TypeScript SDK for programmatic access.
+  </Card>
+</CardGroup>

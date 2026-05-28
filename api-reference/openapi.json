@@ -149,17 +149,30 @@
       }
     },
 
+    "/connections": {
+      "get": { "tags": ["Connections"], "summary": "List connections", "operationId": "listConnections", "responses": { "200": { "description": "Connections", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Connection" } }, "example": [ { "id": "conn_123", "name": "Acme" } ] } } } } },
+      "post": { "tags": ["Connections"], "summary": "Create connection", "operationId": "createConnection", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateConnectionParams" }, "example": { "name": "Acme" } } } }, "responses": { "200": { "description": "Connection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Connection" }, "example": { "id": "conn_123", "name": "Acme" } } } } } }
+    },
+    "/connections/{id}": {
+      "get": { "tags": ["Connections"], "summary": "Get connection", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Connection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Connection" } } } }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "patch": { "tags": ["Connections"], "summary": "Update connection", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateConnectionParams" } } } }, "responses": { "200": { "description": "Connection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Connection" } } } } } },
+      "delete": { "tags": ["Connections"], "summary": "Delete connection", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "204": { "description": "Deleted" } } }
+    },
+    "/connections/{id}/test-connection": {
+      "post": { "tags": ["Connections"], "summary": "Test SFTP connection", "operationId": "testConnection", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Connection result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TestConnectionResponse" }, "example": { "success": true, "message": "Connected" } } } } } }
+    },
+
     "/clients": {
-      "get": { "tags": ["Clients"], "summary": "List clients", "operationId": "listClients", "responses": { "200": { "description": "Clients", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Client" } }, "example": [ { "id": "cl_123", "name": "Acme" } ] } } } } },
-      "post": { "tags": ["Clients"], "summary": "Create client", "operationId": "createClient", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateClientParams" }, "example": { "name": "Acme" } } } }, "responses": { "200": { "description": "Client", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" }, "example": { "id": "cl_123", "name": "Acme" } } } } } }
+      "get": { "tags": ["Clients (deprecated)"], "summary": "List clients", "operationId": "listClients", "deprecated": true, "description": "**Deprecated** as of API version `2026-05-25`. Use [`GET /connections`](#tag/connections/get/connections) instead. Sunset: 2027-05-25.", "responses": { "200": { "description": "Clients", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Client" } }, "example": [ { "id": "cl_123", "name": "Acme" } ] } } } } },
+      "post": { "tags": ["Clients (deprecated)"], "summary": "Create client", "operationId": "createClient", "deprecated": true, "description": "**Deprecated** as of API version `2026-05-25`. Use [`POST /connections`](#tag/connections/post/connections) instead. Sunset: 2027-05-25.", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateClientParams" }, "example": { "name": "Acme" } } } }, "responses": { "200": { "description": "Client", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" }, "example": { "id": "cl_123", "name": "Acme" } } } } } }
     },
     "/clients/{id}": {
-      "get": { "tags": ["Clients"], "summary": "Get client", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Client", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } }, "404": { "$ref": "#/components/responses/NotFound" } } },
-      "patch": { "tags": ["Clients"], "summary": "Update client", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateClientParams" } } } }, "responses": { "200": { "description": "Client", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } } } },
-      "delete": { "tags": ["Clients"], "summary": "Delete client", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "204": { "description": "Deleted" } } }
+      "get": { "tags": ["Clients (deprecated)"], "summary": "Get client", "deprecated": true, "description": "**Deprecated** — use `GET /connections/{id}` instead.", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Client", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "patch": { "tags": ["Clients (deprecated)"], "summary": "Update client", "deprecated": true, "description": "**Deprecated** — use `PATCH /connections/{id}` instead.", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateClientParams" } } } }, "responses": { "200": { "description": "Client", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Client" } } } } } },
+      "delete": { "tags": ["Clients (deprecated)"], "summary": "Delete client", "deprecated": true, "description": "**Deprecated** — use `DELETE /connections/{id}` instead.", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "204": { "description": "Deleted" } } }
     },
     "/clients/{id}/test-connection": {
-      "post": { "tags": ["Clients"], "summary": "Test SFTP connection", "operationId": "testClientConnection", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Connection result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TestConnectionResponse" }, "example": { "success": true, "message": "Connected" } } } } } }
+      "post": { "tags": ["Clients (deprecated)"], "summary": "Test SFTP connection", "operationId": "testClientConnection", "deprecated": true, "description": "**Deprecated** — use `POST /connections/{id}/test-connection` instead.", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Connection result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TestConnectionResponse" }, "example": { "success": true, "message": "Connected" } } } } } }
     },
 
     "/schemas": {
@@ -431,8 +444,9 @@
         ]
       },
 
-      "Client": {
+      "Connection": {
         "type": "object",
+        "description": "An SFTP / Email / API endpoint with its credentials. Canonical name as of API version `2026-05-25` (formerly `Client`). Credentials (sftpPassword / sftpPrivateKey / sftpPassphrase / awsPassword) are write-only and never returned in responses.",
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
@@ -446,10 +460,9 @@
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "description": "Credentials (sftpPassword / sftpPrivateKey / sftpPassphrase / awsPassword) are write-only and never returned in responses.",
         "required": ["id", "name", "workspaceId", "createdAt", "updatedAt"]
       },
-      "CreateClientParams": {
+      "CreateConnectionParams": {
         "type": "object",
         "properties": {
           "name": { "type": "string" },
@@ -466,8 +479,23 @@
         },
         "required": ["name"]
       },
+      "UpdateConnectionParams": {
+        "allOf": [ { "$ref": "#/components/schemas/CreateConnectionParams" } ]
+      },
+      "Client": {
+        "deprecated": true,
+        "description": "**Deprecated** — alias for [Connection](#schema/Connection). Removed when API version `2024-09-01` sunsets on 2027-05-25.",
+        "allOf": [ { "$ref": "#/components/schemas/Connection" } ]
+      },
+      "CreateClientParams": {
+        "deprecated": true,
+        "description": "**Deprecated** — alias for [CreateConnectionParams](#schema/CreateConnectionParams).",
+        "allOf": [ { "$ref": "#/components/schemas/CreateConnectionParams" } ]
+      },
       "UpdateClientParams": {
-        "allOf": [ { "$ref": "#/components/schemas/CreateClientParams" } ]
+        "deprecated": true,
+        "description": "**Deprecated** — alias for [UpdateConnectionParams](#schema/UpdateConnectionParams).",
+        "allOf": [ { "$ref": "#/components/schemas/UpdateConnectionParams" } ]
       },
       "TestConnectionResponse": {
         "type": "object",

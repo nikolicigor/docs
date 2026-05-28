@@ -38,6 +38,20 @@
               "automated-flows/outbound",
               "api-library/overview"
             ]
+          },
+          {
+            "group": "MCP Server",
+            "pages": [
+              "mcp-server/overview",
+              "mcp-server/tools"
+            ]
+          },
+          {
+            "group": "Versioning",
+            "pages": [
+              "changelog",
+              "migration/v1-to-v2"
+            ]
           }
         ]
       },

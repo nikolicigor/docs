@@ -1,0 +1,84 @@
+---
+title: "Changelog"
+description: "API version history and breaking-change log"
+---
+
+FileFeed uses date-based API versions. Every entry below is a version you
+can pin to via the `FileFeed-Version` header. Existing integrations stay on
+their pinned version forever (until that version's sunset date) — bumping
+is opt-in.
+
+See the [API introduction](/api-reference/introduction#versioning) for how
+versioning works and the [migration guides](#migration-guides) below for
+upgrade walkthroughs.
+
+---
+
+## `2026-05-25` &nbsp;<sub>Latest</sub>
+
+The "Connection" rename.
+
+### Added
+- New canonical endpoints under `/connections/*` mirroring the existing
+  `/clients/*` routes one-for-one.
+- `FileFeed-Version` response header on every reply so clients can audit
+  which shape the server applied.
+- `Deprecation` / `Sunset` / `Link` response headers on legacy `/clients`
+  routes when accessed with this version (per
+  [RFC 8594](https://www.rfc-editor.org/rfc/rfc8594) and
+  [draft-ietf-httpapi-deprecation-header](https://www.ietf.org/archive/id/draft-ietf-httpapi-deprecation-header-08.html)).
+- `@filefeed/sdk@2.0.0` published with:
+  - `filefeed.connections.*` namespace
+  - `FileFeedConfig.apiVersion` override
+  - `FileFeedConfig.onDeprecation` callback
+
+### Changed
+- The entity formerly called `Client` is now called `Connection`. The
+  database row, IDs, and JSON shape are unchanged — only the name moved.
+- TypeScript types `Client`, `CreateClientParams`, `UpdateClientParams` are
+  now aliases for `Connection`, `CreateConnectionParams`,
+  `UpdateConnectionParams`. Source-compatible — existing code keeps
+  compiling.
+
+### Deprecated
+- HTTP: all `/clients/*` routes when called with `FileFeed-Version:
+  2026-05-25`. They keep working but emit `Deprecation: true`.
+- SDK: `filefeed.clients.*` methods. They proxy to `connections.*` and emit
+  one warning per method per process.
+- Method rename: `filefeed.clients.testConnection(id)` → `filefeed.connections.test(id)`.
+
+### Sunset
+- API version `2024-09-01` is scheduled for sunset on **2027-05-25**.
+
+[Read the migration guide →](/migration/v1-to-v2)
+
+---
+
+## `2024-09-01` &nbsp;<sub>Deprecated · sunsets 2027-05-25</sub>
+
+Baseline. This is the version every workspace was created on prior to the
+`2026-05-25` release. No prior changelog entries exist — this is the first
+version where date-based versioning was introduced; we backdated the
+baseline label to the date of GA so we have a coherent timeline.
+
+### Endpoints
+- `/clients/*`, `/schemas/*`, `/pipelines/*`, `/pipeline-runs/*`,
+  `/webhooks/*`, `/outbound/*`
+
+### Sunset behaviour
+On **2027-05-25**, requests sent with `FileFeed-Version: 2024-09-01` will
+receive `410 Gone`:
+
+```json
+{
+  "error": "api_version_sunset",
+  "message": "API version 2024-09-01 was sunset on 2027-05-25. Upgrade to 2026-05-25.",
+  "migration_url": "https://docs.filefeed.io/migration/v1-to-v2"
+}
+```
+
+---
+
+## Migration guides
+
+- [Upgrade to 2026-05-25](/migration/v1-to-v2) — Client → Connection rename

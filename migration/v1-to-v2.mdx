@@ -1,0 +1,196 @@
+---
+title: "Upgrade to 2026-05-25"
+description: "Rename Client to Connection across the API and SDK"
+---
+
+API version `2026-05-25` renames the **Client** entity to **Connection**.
+That's the entire change — the wire format, request bodies, response shapes,
+and IDs are all identical to `2024-09-01`. The legacy `/clients` endpoints
+and the SDK's `filefeed.clients.*` namespace continue to work for **12
+months**, until `2024-09-01` is sunset on **2027-05-25**.
+
+<Note>
+**No action is required today.** Existing integrations keep working until
+the sunset date. This guide is here when you're ready to switch.
+</Note>
+
+## At a glance
+
+| Before (`2024-09-01`)                  | After (`2026-05-25`)                       |
+| -------------------------------------- | ------------------------------------------ |
+| `GET /clients`                         | `GET /connections`                         |
+| `GET /clients/:id`                     | `GET /connections/:id`                     |
+| `POST /clients`                        | `POST /connections`                        |
+| `PATCH /clients/:id`                   | `PATCH /connections/:id`                   |
+| `DELETE /clients/:id`                  | `DELETE /connections/:id`                  |
+| `POST /clients/:id/test-connection`    | `POST /connections/:id/test-connection`    |
+| `filefeed.clients.*` (SDK)             | `filefeed.connections.*` (SDK)             |
+| `filefeed.clients.testConnection(id)`  | `filefeed.connections.test(id)`            |
+| `Client`, `CreateClientParams` types   | `Connection`, `CreateConnectionParams`     |
+
+The fields inside `Connection` are byte-for-byte identical to v1's `Client` —
+you don't need to touch request bodies, only the URL path and the resource
+name.
+
+## Backward-compat guarantee
+
+Both the API and the SDK serve the legacy names alongside the canonical ones:
+
+- `/clients/*` HTTP routes still work and return identical JSON.
+- `filefeed.clients.*` SDK methods still work and proxy to `connections.*`.
+- `Client`, `CreateClientParams`, `UpdateClientParams` TypeScript types are
+  aliases for the new names — your existing types still compile.
+
+The legacy surfaces emit deprecation signals so you know which call sites
+still need to be updated:
+
+- HTTP responses include `Deprecation: true`, `Sunset: 2027-05-25`, and a
+  `Link` header pointing to this guide.
+- The SDK's `onDeprecation` callback fires once per deprecated method per
+  process. Falls back to `console.warn` if no callback is configured.
+
+## Step 1 — Pin to the new version
+
+Send the version header on every request:
+
+```http
+GET /connections HTTP/1.1
+Host: api.sftpsync.io
+X-API-Key: sk_live_...
+FileFeed-Version: 2026-05-25
+```
+
+Or set the default for your entire workspace in the dashboard
+(**Settings → API → Default version**). All requests that don't supply a
+header will adopt that default.
+
+If you use the SDK, **upgrade to `@filefeed/sdk@2`** — it pins the header
+automatically:
+
+```bash
+npm install @filefeed/sdk@2
+```
+
+```ts
+import { FileFeed } from '@filefeed/sdk';
+
+const filefeed = new FileFeed({
+  apiKey: process.env.FILEFEED_API_KEY!,
+  // Optional — explicit pinning. Defaults to the SDK's release version.
+  apiVersion: '2026-05-25',
+  // Surface deprecation signals to your error tracker.
+  onDeprecation: (warning) => {
+    Sentry.captureMessage(warning.message, 'warning');
+  },
+});
+```
+
+## Step 2 — Find your call sites
+
+Grep your codebase for the legacy names:
+
+```bash
+# HTTP callers
+rg "/clients\b" src/
+rg "X-API-Key:.*clients" src/
+
+# SDK callers
+rg "filefeed\.clients\." src/
+rg "CreateClientParams|UpdateClientParams|: Client[^a-zA-Z]" src/
+```
+
+## Step 3 — Rename mechanically
+
+Each call site is a one-line edit. Bodies and field names are unchanged.
+
+<CodeGroup>
+
+```ts SDK
+- const c = await filefeed.clients.retrieve(id);
++ const c = await filefeed.connections.retrieve(id);
+
+- await filefeed.clients.testConnection(id);
++ await filefeed.connections.test(id);
+```
+
+```bash curl
+- curl https://api.sftpsync.io/clients \
++ curl https://api.sftpsync.io/connections \
+    -H 'X-API-Key: sk_live_...' \
++   -H 'FileFeed-Version: 2026-05-25' \
+    -H 'Content-Type: application/json' \
+    -d '{
+      "name": "Acme :: Production",
+      "useHostedSFTP": true,
+      "awsPassword": "strong-password"
+    }'
+```
+
+```ts Types
+- import type { Client, CreateClientParams } from '@filefeed/sdk';
++ import type { Connection, CreateConnectionParams } from '@filefeed/sdk';
+
+- function syncClient(c: Client) { ... }
++ function syncConnection(c: Connection) { ... }
+```
+
+</CodeGroup>
+
+## Step 4 — Watch for deprecation signals
+
+Until your cutover is complete, configure the SDK callback so the legacy
+calls don't go unnoticed:
+
+```ts
+new FileFeed({
+  apiKey: process.env.FILEFEED_API_KEY!,
+  onDeprecation: (w) => {
+    console.warn(`[FileFeed] ${w.method ?? w.source}: ${w.message}`);
+    Sentry.captureMessage(w.message, 'warning');
+  },
+});
+```
+
+Or if you're calling the HTTP API directly, log responses that carry
+`Deprecation: true`:
+
+```ts
+if (response.headers.get('deprecation') === 'true') {
+  logger.warn('Deprecated FileFeed route', {
+    url: response.url,
+    sunset: response.headers.get('sunset'),
+    link: response.headers.get('link'),
+  });
+}
+```
+
+## FAQ
+
+**Do my Pipelines or Pipeline Runs need re-creation?**
+No. Pipelines continue to reference the same underlying records — they're
+linked by ID, and the IDs are unchanged. The Connection resource is the
+same database row, just under a new name.
+
+**Will `clientId` fields in Pipeline payloads keep working?**
+Yes. Pipeline request/response payloads still expose `clientId` on
+`2026-05-25` for backward compatibility. We may add a `connectionId` alias
+in a later version, but `clientId` will keep working until the next major
+versioned change.
+
+**Why ship a version for a rename?**
+So that you control the cutover. Without a versioned change, the SDK would
+have had to either break compile-time types on upgrade or silently keep
+both names forever. The versioned path lets the rename feel cosmetic to
+existing customers while letting new customers see the canonical name from
+day one.
+
+**What if I do nothing?**
+Your integration keeps working. Around 30 days before the sunset date you'll
+get email warnings; if your traffic on `2024-09-01` is still significant
+we'll reach out directly to coordinate the cutover.
+
+## Related
+
+- [Changelog](/changelog) — full version history
+- [API Introduction](/api-reference/introduction) — versioning headers
+- [SDK migration guide](https://github.com/filefeed/filefeed-sdk/blob/main/MIGRATION.md) — SDK-specific code diffs

@@ -1,6 +1,6 @@
 ---
 title: "API Introduction"
-description: "Base URL, authentication, and conventions"
+description: "Base URL, authentication, versioning, and conventions"
 ---
 
 ## Base URL
@@ -10,12 +10,65 @@ https://api.sftpsync.io
 ```
 
 ## Authentication
-- Header: `X-API-Key: <your_api_key>`
+
+Every request requires a workspace API key sent via header:
+
+```
+X-API-Key: <your_api_key>
+```
+
+## Versioning
+
+FileFeed uses **date-based API versions**, the same pattern Stripe and Twilio
+use. Send the version you want to pin to as a header:
+
+```
+FileFeed-Version: 2026-05-25
+```
+
+If you omit the header, the API falls back to the **default version pinned
+to your workspace** (set at signup; configurable from the dashboard). Older
+workspaces remain on `2024-09-01` until they explicitly opt in.
+
+### Available versions
+
+| Version       | Status      | Notes                                                       |
+| ------------- | ----------- | ----------------------------------------------------------- |
+| `2026-05-25`  | **Latest**  | Renames `Client` → `Connection`. Identical shape, new name. |
+| `2024-09-01`  | Deprecated  | Baseline. Sunsets on **2027-05-25**.                        |
+
+See the [migration guide](/migration/v1-to-v2) for upgrade instructions and
+the [changelog](/changelog) for the full version history.
+
+### Response headers
+
+Every response echoes the version the server applied:
+
+```
+FileFeed-Version: 2026-05-25
+```
+
+Deprecated routes additionally include:
+
+```
+Deprecation: true
+Sunset: 2027-05-25
+Link: <https://docs.filefeed.io/migration/v1-to-v2>; rel="deprecation",
+      <https://api.sftpsync.io/connections>; rel="successor-version"
+```
+
+Watch for `Deprecation: true` in your integration's response handler — that
+header is how you'll know a route you depend on is going away. The
+[`@filefeed/sdk`](/api-library/overview) surfaces it through the
+`onDeprecation` callback automatically.
 
 ## Pagination
+
 - Page-based: `?page=1&limit=50`
 - Offset-based (data pages): `?offset=0&limit=1000`
 
 <Note>
 For a typed client, use the `@filefeed/sdk` [API Library](/api-library/overview).
+The SDK pins to a specific API version per release, so an SDK upgrade is what
+moves you between versions — never an out-of-band wire change.
 </Note>

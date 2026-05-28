@@ -1,0 +1,115 @@
+---
+title: "Available Tools"
+description: "Complete reference of all 38 MCP tools"
+---
+
+## Tool Reference
+
+The FileFeed MCP server exposes **38 tools** across 6 resource groups. Each tool includes proper MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`) so AI clients can make informed decisions about tool safety.
+
+<Note>
+All tools use `registerTool()` (the current MCP SDK API) with `title`, `description`, `inputSchema`, and `annotations`.
+</Note>
+
+## Clients
+
+Manage SFTP clients and their connection details.
+
+| Tool | Annotations | Description |
+|------|:-----------:|-------------|
+| `clients_list` | read-only | List all SFTP clients in the workspace |
+| `clients_retrieve` | read-only | Get a single client by ID |
+| `clients_create` | — | Create a new SFTP client |
+| `clients_update` | idempotent | Update an existing client |
+| `clients_remove` | destructive | Delete a client |
+| `clients_test_connection` | read-only | Test SFTP connectivity for a client |
+
+**Example prompt:** *"Test the connection for my Acme client"*
+
+## Schemas
+
+Define and validate your target data model.
+
+| Tool | Annotations | Description |
+|------|:-----------:|-------------|
+| `schemas_list` | read-only | List all data schemas |
+| `schemas_retrieve` | read-only | Get a single schema by ID |
+| `schemas_create` | — | Create a new schema with field definitions |
+| `schemas_update` | idempotent | Update an existing schema |
+| `schemas_remove` | destructive | Delete a schema |
+| `schemas_validate` | read-only | Validate data against a schema |
+
+**Example prompt:** *"Show me the fields in my Employees schema"*
+
+## Pipelines
+
+Connect clients to schemas and define how files are transformed.
+
+| Tool | Annotations | Description |
+|------|:-----------:|-------------|
+| `pipelines_list` | read-only | List all pipelines (filterable by client) |
+| `pipelines_retrieve` | read-only | Get a single pipeline with full config |
+| `pipelines_create` | — | Create a new pipeline with field mappings |
+| `pipelines_update` | idempotent | Update an existing pipeline |
+| `pipelines_remove` | destructive | Delete a pipeline |
+| `pipelines_toggle_active` | — | Toggle pipeline active/inactive status |
+
+**Example prompt:** *"Create a pipeline connecting client Acme to the Employees schema with these field mappings..."*
+
+## Pipeline Runs
+
+Track file processing executions and access processed data.
+
+| Tool | Annotations | Description |
+|------|:-----------:|-------------|
+| `pipeline_runs_list` | read-only | List runs with filtering (status, client, pipeline) |
+| `pipeline_runs_retrieve` | read-only | Get a single run by ID |
+| `pipeline_runs_get_data` | read-only | Get processed data from a run (paginated) |
+| `pipeline_runs_ack` | idempotent | Acknowledge a run as consumed |
+| `pipeline_runs_reprocess` | — | Reprocess a failed run |
+| `pipeline_runs_get_original_url` | read-only | Get presigned URL for original file |
+| `pipeline_runs_get_processed_url` | read-only | Get presigned URL for processed file |
+| `pipeline_runs_get_by_pipeline` | read-only | List runs for a specific pipeline |
+
+**Example prompt:** *"Show me all failed runs from the last week and reprocess them"*
+
+## Webhooks
+
+Receive signed HTTP notifications for pipeline events.
+
+| Tool | Annotations | Description |
+|------|:-----------:|-------------|
+| `webhooks_list` | read-only | List all webhooks |
+| `webhooks_retrieve` | read-only | Get a single webhook by ID |
+| `webhooks_create` | — | Create a new webhook |
+| `webhooks_update` | idempotent | Update an existing webhook |
+| `webhooks_remove` | destructive | Delete a webhook |
+| `webhooks_list_deliveries` | read-only | List webhook delivery attempts |
+
+**Example prompt:** *"Show me recent failed webhook deliveries"*
+
+## Outbound
+
+Push JSON data into outbound pipelines.
+
+| Tool | Annotations | Description |
+|------|:-----------:|-------------|
+| `outbound_init_upload` | — | Initialize a multipart upload session |
+| `outbound_upload_part` | — | Upload a data chunk |
+| `outbound_complete_upload` | — | Complete and trigger processing |
+| `outbound_abort_upload` | destructive | Abort an upload session |
+| `outbound_get_upload_status` | read-only | Check upload progress |
+| `outbound_upload_json` | — | Upload JSON data (auto-chunked convenience method) |
+
+**Example prompt:** *"Upload this JSON data to my outbound pipeline for client Acme"*
+
+## Tool Annotations
+
+MCP tool annotations help AI clients understand tool behavior:
+
+| Annotation | Meaning |
+|-----------|---------|
+| **read-only** | Tool only reads data, no side effects. Safe to call freely. |
+| **idempotent** | Calling the tool multiple times with the same input produces the same result. |
+| **destructive** | Tool permanently deletes or aborts resources. AI clients should confirm before calling. |
+| **—** | Tool has side effects (creates/modifies data) but is not destructive. |

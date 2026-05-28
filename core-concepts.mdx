@@ -1,7 +1,13 @@
 ---
 title: "Core Concepts"
-description: "Understand FileFeed fundamentals: Clients, Schemas, Pipelines, Pipeline Runs, and Webhooks"
+description: "Understand FileFeed fundamentals: Connections, Schemas, Pipelines, Pipeline Runs, and Webhooks"
 ---
+
+<Note>
+The entity formerly called **Client** was renamed to **Connection** in API
+version `2026-05-25`. Old names (`/clients`, `filefeed.clients`, `Client`
+type) still work for 12 months — see the [migration guide](/migration/v1-to-v2).
+</Note>
 
 ## Overview
 
@@ -54,14 +60,14 @@ FileFeed streamlines file-based integrations through two primary paths:
 ### Building Blocks
 
 <CardGroup cols={3}>
-  <Card title="Clients" icon="users" href="/automated-flows/sftp-flow#2-clients">
-    Dedicated SFTP space and credentials per data source.
+  <Card title="Connections" icon="plug" href="/automated-flows/sftp-flow#2-connections">
+    Dedicated SFTP space and credentials per data source. Previously called "Clients".
   </Card>
   <Card title="Schemas" icon="database" href="/automated-flows/sftp-flow#3-schemas">
     Define fields and validation to ensure consistent data.
   </Card>
   <Card title="Pipelines" icon="shuffle" href="/automated-flows/sftp-flow#4-pipelines">
-    Connect client + schema, add mappings and transforms. Supports inbound (SFTP) and outbound (API) directions.
+    Connect a Connection + Schema, add mappings and transforms. Supports inbound (SFTP) and outbound (API) directions.
   </Card>
   <Card title="Outbound Uploads" icon="arrow-up-from-bracket" href="/automated-flows/outbound">
     Push JSON data into pipelines via API instead of SFTP.
