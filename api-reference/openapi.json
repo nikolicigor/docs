@@ -379,7 +379,7 @@
 
       "PipelineRunStatus": {
         "type": "string",
-        "enum": ["pending", "processing", "completed", "failed", "acknowledged"]
+        "enum": ["pending", "processing", "completed", "delivered", "failed", "acknowledged"]
       },
       "PipelineRun": {
         "type": "object",
@@ -446,18 +446,14 @@
 
       "Connection": {
         "type": "object",
-        "description": "An SFTP / Email / API endpoint with its credentials. Canonical name as of API version `2026-05-25` (formerly `Client`).",
+        "description": "An SFTP / Email / API endpoint with its credentials. Canonical name as of API version `2026-05-25` (formerly `Client`). Credentials (sftpPassword / sftpPrivateKey / sftpPassphrase / awsPassword) are write-only and never returned in responses.",
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
           "sftpUsername": { "type": "string" },
-          "sftpPassword": { "type": "string" },
-          "sftpPrivateKey": { "type": "string" },
-          "sftpPassphrase": { "type": "string" },
           "useHostedSFTP": { "type": "boolean" },
-          "awsUserName": { "type": "string" },
+          "awsUserName": { "type": "string", "description": "Server-generated slug ({name}-{workspace}). Used as clientName for outbound uploads." },
           "awsPublicKey": { "type": "string" },
-          "awsPassword": { "type": "string" },
           "ipWhitelist": { "type": "array", "items": { "type": "string" } },
           "workspaceId": { "type": "string" },
           "sftpServerDataId": { "type": "string" },
@@ -619,16 +615,15 @@
       },
       "CreateWebhookParams": {
         "type": "object",
+        "description": "eventType and secret are not accepted on create/update: the server defaults eventType to GENERAL and generates the secret (both returned on the Webhook response).",
         "properties": {
           "name": { "type": "string" },
           "description": { "type": "string" },
           "url": { "type": "string", "format": "uri" },
-          "eventType": { "type": "string" },
           "headers": { "type": "object", "additionalProperties": { "type": "string" } },
-          "secret": { "type": "string" },
           "isActive": { "type": "boolean" }
         },
-        "required": ["name", "url", "eventType"]
+        "required": ["name", "url"]
       },
       "UpdateWebhookParams": {
         "allOf": [ { "$ref": "#/components/schemas/CreateWebhookParams" } ]
@@ -671,7 +666,9 @@
           "clientName": { "type": "string", "description": "Client name (awsUserName of the client)." },
           "pipelineName": { "type": "string", "description": "Name of the outbound pipeline (must have direction: \"outbound\")." },
           "totalParts": { "type": "integer", "minimum": 1, "description": "Total number of parts to upload." },
-          "filename": { "type": "string", "description": "Optional final filename. Defaults to upload-{uploadId}.json." }
+          "filename": { "type": "string", "description": "Optional final filename. Defaults to upload-{uploadId}.json." },
+          "outputFilename": { "type": "string", "description": "Exact name for the delivered file. Extension appended from outputFormat if omitted." },
+          "outputFormat": { "type": "string", "enum": ["csv", "json", "xml"], "description": "Output serialization. Overrides format; inferred from outputFilename extension if omitted, else defaults to JSON." }
         },
         "required": ["clientName", "pipelineName", "totalParts"]
       },
