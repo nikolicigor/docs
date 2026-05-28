@@ -81,7 +81,8 @@ For endpoint details and payload schemas, see the API Reference.
     | Method | Signature | Description |
     |---|---|---|
     | list | `list()` | List clients. |
-    | retrieve | `retrieve(id)` | Get a client. |
+    | retrieve | `retrieve(id)` | Get a client by id. |
+    | getByName | `getByName(name)` | Get a client by name (unique per workspace). Resolves to the client or `undefined`. |
     | create | `create(params)` | Create a client with credentials. |
     | update | `update(id, params)` | Update client details. |
     | remove | `remove(id)` | Delete a client. |
@@ -91,10 +92,16 @@ For endpoint details and payload schemas, see the API Reference.
     - Provision a client with SFTP credentials
     - Rotate credentials, manage allowlists
     - Verify connectivity before onboarding
+    - Resolve a client's `awsUserName` (the `clientName` used by outbound uploads) from its human-readable name
 
     ```ts
     const client = await filefeed.clients.create({ name: 'Acme' });
     const ok = await filefeed.clients.testConnection(client.id);
+
+    // Look a connection up by name, then read its awsUserName (the value
+    // outbound uploads expect as `clientName`). Credentials are never returned.
+    const conn = await filefeed.connections.getByName('Acme');
+    if (conn) console.log(conn.awsUserName, conn.sftpUsername);
     ```
   </Accordion>
 
@@ -177,7 +184,7 @@ For endpoint details and payload schemas, see the API Reference.
     |---|---|---|
     | list | `list()` | List webhooks. |
     | retrieve | `retrieve(id)` | Get a webhook. |
-    | create | `create(params)` | Create a webhook (URL, event type, secret). |
+    | create | `create(params)` | Create a webhook (name, URL, optional headers). eventType defaults to GENERAL and secret is server-generated. |
     | update | `update(id, params)` | Update webhook configuration. |
     | remove | `remove(id)` | Delete a webhook. |
     | listDeliveries | `listDeliveries(params)` | Inspect delivery attempts and status codes. |
@@ -187,7 +194,7 @@ For endpoint details and payload schemas, see the API Reference.
     - Monitor delivery health and retry on failure
 
     ```ts
-    const hook = await filefeed.webhooks.create({ name: 'Pipeline events', url: 'https://example.com/webhooks/filefeed', eventType: 'GENERAL' });
+    const hook = await filefeed.webhooks.create({ name: 'Pipeline events', url: 'https://example.com/webhooks/filefeed' });
     const deliveries = await filefeed.webhooks.listDeliveries({ webhookId: hook.id, page: 1, limit: 50 });
     ```
   </Accordion>
@@ -208,12 +215,17 @@ For endpoint details and payload schemas, see the API Reference.
     - Push data from your backend into a pipeline
     - Chunk large datasets and upload in parts
     - Use `uploadJson()` for simple one-shot uploads
+    - Choose the delivered file's name and format (`csv` | `json` | `xml`)
+
+    `clientName` is the connection's `awsUserName` (resolve it with `connections.getByName(name).awsUserName`).
 
     ```ts
     const result = await filefeed.outbound.uploadJson({
       clientName: 'acme-corp',
       pipelineName: 'employee-sync',
       data: [{ remoteId: 'E001', firstName: 'Alice', lastName: 'Smith' }],
+      outputFilename: 'employees.csv', // optional exact name
+      outputFormat: 'csv',             // optional: csv | json | xml
     });
     ```
 

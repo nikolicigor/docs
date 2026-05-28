@@ -44,7 +44,7 @@ Your Backend
     → PUT .../parts/:n (upload JSON chunks)
       → POST .../complete (combine & trigger processing)
         → Pipeline (Schema + Mappings + Transforms)
-          → Pipeline Run (status: completed)
+          → Pipeline Run (status: delivered)
             → Webhook Event (if configured)
               → Fetch processed data via API/SDK
 ```
@@ -55,7 +55,7 @@ The outbound upload uses a **multipart flow** similar to AWS S3 multipart upload
 
 ### Step 1: Initialize
 
-Create an upload session specifying the client, pipeline, number of parts, and optional filename.
+Create an upload session specifying the client, pipeline, number of parts, and optional filename and output settings.
 
 ```ts
 const init = await filefeed.outbound.initUpload({
@@ -63,9 +63,15 @@ const init = await filefeed.outbound.initUpload({
   pipelineName: 'employee-sync',     // must be direction: "outbound"
   totalParts: 3,
   filename: 'employees.json',        // optional
+  outputFilename: 'employees.csv',   // optional: exact delivered file name
+  outputFormat: 'csv',               // optional: csv | json | xml
 });
 // init.uploadId → use this for subsequent calls
 ```
+
+<Tip>
+`clientName` is the connection's server-generated `awsUserName` slug, not its display name. Resolve it with `connections.getByName('Acme').awsUserName`. Output resolution: `outputFormat` → extension of `outputFilename` → input filename (defaults to JSON).
+</Tip>
 
 ### Step 2: Upload parts
 
@@ -108,12 +114,12 @@ const result = await filefeed.outbound.completeUpload(init.uploadId, {
 
 ### Step 4: Consume results
 
-After processing completes, a **pipeline run** is created. Use the standard pipeline runs API to fetch results:
+After processing completes, a **pipeline run** is created. Outbound runs reach the terminal status `delivered` once the output has been written to its destination (inbound runs use `completed`). Use the standard pipeline runs API to fetch results:
 
 ```ts
 const runs = await filefeed.pipelineRuns.list({
   pipelineName: 'employee-sync',
-  status: 'completed',
+  status: 'delivered',
   limit: 1,
 });
 
@@ -146,6 +152,8 @@ const result = await filefeed.outbound.uploadJson({
   ],
   chunkSize: 1000,                // records per part (default: 1000)
   filename: 'employees.json',     // optional
+  outputFilename: 'employees.csv',// optional: exact delivered file name
+  outputFormat: 'csv',            // optional: csv | json | xml
 });
 ```
 
