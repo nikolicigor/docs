@@ -98,6 +98,14 @@ await filefeed.outbound.uploadPart(init.uploadId, 2, {
 Each part's `data` must be a JSON array. Parts can have different sizes. The objects should contain the **source** field names that match your pipeline's field mappings.
 </Tip>
 
+<Note>
+**Need a column that's always the same value?** Add a *static value* mapping to
+the pipeline — `{ "targetField": "sourceSystem", "staticValue": "ACME" }` (no
+`sourceField`). FileFeed writes that constant into the column on every delivered
+row, so you don't have to include it in each upload payload. In the dashboard,
+use the **Static columns** section of the outbound pipeline editor.
+</Note>
+
 ### Step 3: Complete
 
 Finalize the upload by listing all parts. FileFeed combines them into one file, stores it in S3, and triggers pipeline processing.

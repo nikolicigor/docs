@@ -174,6 +174,10 @@ defined mappings and transformations.
       "source": "customer_phone",
       "target": "phone",
       "transform": "formatPhoneNumber"
+    },
+    {
+      "target": "sourceSystem",
+      "staticValue": "ACME"
     }
   ],
   "transformations": {
@@ -182,6 +186,17 @@ defined mappings and transformations.
   }
 }
 ```
+
+<Note>
+**Static values (exact values).** A mapping with `staticValue` and no `source`
+writes a hardcoded constant into the target column for **every** row, regardless
+of the input record. Use it for columns that must always carry a fixed value —
+for example a partner's source-system id you send on every outbound delivery.
+`staticValue` accepts a string, number, boolean, or `null`; `source` and
+`transform` are ignored when it is set. Works for both inbound and outbound
+pipelines. In the dashboard, toggle **Exact value** on an inbound field, or use
+the **Static columns** section on an outbound pipeline.
+</Note>
 
 ### 5. Typical Workflow
 
