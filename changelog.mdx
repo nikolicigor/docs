@@ -50,6 +50,23 @@ The "Connection" rename.
 ### Sunset
 - API version `2024-09-01` is scheduled for sunset on **2027-05-25**.
 
+#### Additive updates (no version bump)
+
+These shipped within `2026-05-25` and are backwards compatible:
+
+- Outbound uploads accept `connectionName` (the connection's human-readable
+  name) on `POST /outbound/uploads`. Connection resolution now matches the
+  connection `name` — the same path for hosted and self-hosted SFTP — so the
+  name you created the connection with now works for self-hosted delivery.
+  The legacy `clientName` field still works (resolved by name) but is
+  deprecated; `connectionName` is also returned on the upload status response.
+- `/pipelines` and `/pipeline-runs` list endpoints accept a `connectionName`
+  filter (alias of the deprecated `clientName` filter).
+- Fixed: outbound `outputFormat: "csv"` / `"xml"` without an explicit
+  `outputFilename` now delivers the file in the requested format instead of
+  silently falling back to JSON.
+- `@filefeed/sdk@2.3.0` published with `connectionName` support.
+
 [Read the migration guide →](/migration/v1-to-v2)
 
 ---

@@ -128,7 +128,7 @@ For endpoint details and payload schemas, see the API Reference.
 
     | Method | Signature | Description |
     |---|---|---|
-    | list | `list({ clientId?, clientName? })` | List pipelines. |
+    | list | `list({ clientId?, connectionName? })` | List pipelines. |
     | retrieve | `retrieve(id)` | Get a pipeline. |
     | create | `create(params)` | Create a pipeline (mappings/transforms). |
     | update | `update(id, params)` | Update pipeline configuration. |
@@ -211,7 +211,7 @@ For endpoint details and payload schemas, see the API Reference.
 
     ```ts
     const result = await filefeed.outbound.uploadJson({
-      clientName: 'acme-corp',
+      connectionName: 'Acme Corp',
       pipelineName: 'employee-sync',
       data: [{ remoteId: 'E001', firstName: 'Alice', lastName: 'Smith' }],
     });

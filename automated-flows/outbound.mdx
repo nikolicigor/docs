@@ -59,7 +59,7 @@ Create an upload session specifying the connection, pipeline, number of parts, a
 
 ```ts
 const init = await filefeed.outbound.initUpload({
-  clientName: 'acme-corp',           // awsUserName of the connection (field kept for back-compat)
+  connectionName: 'Acme Corp',       // the connection's human-readable name
   pipelineName: 'employee-sync',     // must be direction: "outbound"
   totalParts: 3,
   filename: 'employees.json',        // optional
@@ -137,7 +137,7 @@ import FileFeed from '@filefeed/sdk';
 const filefeed = new FileFeed({ apiKey: process.env.FILEFEED_API_KEY! });
 
 const result = await filefeed.outbound.uploadJson({
-  clientName: 'acme-corp',
+  connectionName: 'Acme Corp',
   pipelineName: 'employee-sync',
   data: [
     { remoteId: 'E001', firstName: 'Alice', lastName: 'Smith', workEmail: 'alice@acme.com' },
@@ -199,7 +199,7 @@ initiated → uploading → completed
 
 ## Integration checklist
 
-- [ ] Create Connection with SFTP credentials (provides the `clientName` / `awsUserName` — names kept for back-compat)
+- [ ] Create Connection with SFTP credentials (its name is the `connectionName` you pass to outbound uploads)
 - [ ] Define Schema (target fields and validation)
 - [ ] Create Pipeline with `direction: "outbound"` (link connection + schema, define mappings)
 - [ ] Get API key (Dashboard → My Account → Security Settings)
