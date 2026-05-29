@@ -559,12 +559,13 @@
       "FieldMapping": {
         "type": "object",
         "properties": {
-          "sourceField": { "type": "string" },
+          "sourceField": { "type": "string", "description": "Source field name. Required for field mappings; omit for static-value mappings." },
           "targetField": { "type": "string" },
           "transform": { "type": "string" },
-          "defaultValue": { }
+          "defaultValue": { },
+          "staticValue": { "description": "Hardcoded constant (string, number, boolean, or null) written into the target field for every row, regardless of the input record. When set, sourceField/transform are ignored. Use for columns that must always carry a fixed value.", "oneOf": [ { "type": "string" }, { "type": "number" }, { "type": "boolean" }, { "type": "null" } ] }
         },
-        "required": ["sourceField", "targetField"]
+        "required": ["targetField"]
       },
       "Pipeline": {
         "type": "object",
