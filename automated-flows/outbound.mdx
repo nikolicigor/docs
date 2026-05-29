@@ -99,11 +99,13 @@ Each part's `data` must be a JSON array. Parts can have different sizes. The obj
 </Tip>
 
 <Note>
-**Need a column that's always the same value?** Add a *static value* mapping to
-the pipeline — `{ "targetField": "sourceSystem", "staticValue": "ACME" }` (no
-`sourceField`). FileFeed writes that constant into the column on every delivered
-row, so you don't have to include it in each upload payload. In the dashboard,
-use the **Static columns** section of the outbound pipeline editor.
+**Need a column that's always the same value?** Mark the field as an *exact
+value* field on the **schema** (`"exactValue": true`), then set the constant on
+the pipeline via the mapping's `staticValue`. FileFeed writes that constant into
+the column on every delivered row, so you don't have to include it in each
+upload payload. The value is per pipeline, so connections sharing a schema can
+each send a different fixed value. In the dashboard, toggle **Exact value** on
+the field in the schema editor, then enter the value on the outbound pipeline.
 </Note>
 
 ### Step 3: Complete

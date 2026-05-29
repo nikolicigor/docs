@@ -188,14 +188,16 @@ defined mappings and transformations.
 ```
 
 <Note>
-**Static values (exact values).** A mapping with `staticValue` and no `source`
-writes a hardcoded constant into the target column for **every** row, regardless
-of the input record. Use it for columns that must always carry a fixed value —
-for example a partner's source-system id you send on every outbound delivery.
-`staticValue` accepts a string, number, boolean, or `null`; `source` and
-`transform` are ignored when it is set. Works for both inbound and outbound
-pipelines. In the dashboard, toggle **Exact value** on an inbound field, or use
-the **Static columns** section on an outbound pipeline.
+**Exact values (static fields).** Mark a field as an *exact value* field on the
+**schema** (set `"exactValue": true` on the property, or toggle **Exact value**
+in the schema editor). Each pipeline using that schema then supplies the
+constant via the mapping's `staticValue` — so different connections sharing a
+schema can each send a different fixed value (e.g. a partner-specific
+source-system id). When set, `staticValue` is written into the column for
+**every** row and `source`/`transform` are ignored. `staticValue` accepts a
+string, number, boolean, or `null`. Works for both inbound and outbound. Because
+the flag lives on the schema, a field marked exact-value is static for *every*
+pipeline on that schema (only the value varies per pipeline).
 </Note>
 
 ### 5. Typical Workflow
