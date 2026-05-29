@@ -31,10 +31,20 @@ The "Connection" rename.
   - `filefeed.connections.*` namespace
   - `FileFeedConfig.apiVersion` override
   - `FileFeedConfig.onDeprecation` callback
+- Outbound uploads accept `outputFilename` and `outputFormat` (`csv` |
+  `json` | `xml`) to control the delivered file's name and serialization.
+- Pipeline run status `delivered` — the terminal success state for
+  **outbound** runs (output written to its destination). Inbound runs still
+  use `completed`.
+- `@filefeed/sdk@2.1.0`: outbound output options, self-hosted SFTP connection
+  fields, `delivered` status.
+- `@filefeed/sdk@2.2.0`: `filefeed.connections.getByName(name)` — resolve a
+  connection (and its `awsUserName`) by its workspace-unique name.
 
 ### Changed
 - The entity formerly called `Client` is now called `Connection`. The
   database row, IDs, and JSON shape are unchanged — only the name moved.
+- Connection names are unique per workspace.
 - TypeScript types `Client`, `CreateClientParams`, `UpdateClientParams` are
   now aliases for `Connection`, `CreateConnectionParams`,
   `UpdateConnectionParams`. Source-compatible — existing code keeps
@@ -46,6 +56,11 @@ The "Connection" rename.
 - SDK: `filefeed.clients.*` methods. They proxy to `connections.*` and emit
   one warning per method per process.
 - Method rename: `filefeed.clients.testConnection(id)` → `filefeed.connections.test(id)`.
+
+### Security
+- Connection responses no longer return stored credentials
+  (`sftpPassword` / `sftpPrivateKey` / `sftpPassphrase` / `awsPassword`).
+  They are write-only: set via create/update, never read back.
 
 ### Sunset
 - API version `2024-09-01` is scheduled for sunset on **2027-05-25**.
