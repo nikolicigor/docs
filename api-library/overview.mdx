@@ -131,7 +131,9 @@ For endpoint details and payload schemas, see the API Reference.
   </Accordion>
 
   <Accordion icon="shuffle" title="pipelines">
-    Connect clients to schemas and define mappings/transforms.
+    Connect clients to schemas and define mappings/transforms. Field mappings
+    support sourced entries (`{ source, target, transform? }`) and static values
+    (`{ target, value }`) that write a fixed constant into a column on every row.
 
     | Method | Signature | Description |
     |---|---|---|

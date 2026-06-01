@@ -56,6 +56,8 @@ Connect clients to schemas and define how files are transformed.
 
 **Example prompt:** *"Create a pipeline connecting client Acme to the Employees schema with these field mappings..."*
 
+Field mappings can be sourced (`{ source, target }`) or static (`{ target, value }` — a fixed constant written into a column on every row, e.g. *"...and set `source_system` to `FileFeed` on every row"*).
+
 ## Pipeline Runs
 
 Track file processing executions and access processed data.

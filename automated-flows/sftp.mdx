@@ -183,6 +183,21 @@ defined mappings and transformations.
 }
 ```
 
+Each entry in `fieldMappings` is one of two kinds:
+
+- **Sourced** — `{ "source": "...", "target": "...", "transform": "..." }` copies a column from the input into the target field.
+- **Static value** — `{ "target": "...", "value": "..." }` writes a fixed constant into the target field on **every row**, regardless of the input. Omit `source` and provide `value` instead. Useful for stamping metadata that isn't in the file (a source system, region, batch tag). Transforms don't apply to a static value — the constant is written verbatim. Works in both inbound and outbound pipelines.
+
+```json
+// A static value alongside sourced mappings
+{
+  "fieldMappings": [
+    { "source": "customer_id", "target": "id" },
+    { "target": "source_system", "value": "FileFeed" }
+  ]
+}
+```
+
 ### 5. Typical Workflow
 
 Here's a typical workflow in FileFeed that illustrates how connections,

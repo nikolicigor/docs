@@ -95,7 +95,7 @@ await filefeed.outbound.uploadPart(init.uploadId, 2, {
 ```
 
 <Tip>
-Each part's `data` must be a JSON array. Parts can have different sizes. The objects should contain the **source** field names that match your pipeline's field mappings.
+Each part's `data` must be a JSON array. Parts can have different sizes. The objects should contain the **source** field names that match your pipeline's field mappings. Static-value mappings (`{ target, value }`) need no source field in your data — FileFeed writes the constant into the output automatically.
 </Tip>
 
 ### Step 3: Complete
