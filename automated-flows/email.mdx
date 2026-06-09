@@ -1,0 +1,205 @@
+---
+title: "Email Flow"
+description: "Receive files by email — a dedicated inbound address per connection, with sender, format, and subject controls"
+---
+
+<Note>
+The entity formerly called **Client** is now called **Connection** as of API
+version `2026-05-25`. This page uses the new name throughout. See the
+[migration guide](/migration/v1-to-v2) if you're still on `2024-09-01`.
+</Note>
+
+## What is an Email connection?
+
+An **Email connection** is a [Connection](/automated-flows/sftp#2-connections)
+whose `type` is `EMAIL`. Instead of uploading over SFTP, senders **email a file**
+to a dedicated inbound address. FileFeed receives the message, validates it, and
+runs the first attachment through the connection's pipeline — the same
+Schema → Mappings → Transforms → Webhook flow as every other channel.
+
+It's the lowest-friction way to onboard a sender: there are no credentials to
+issue. You give them an address, they email files to it.
+
+```
+Sender emails a file to {connection}@in.filefeed.io
+  → FileFeed validates sender / attachment format / subject
+    → Pipeline (Schema + Mappings + Transforms)   (first attachment)
+      → Processing & Validation
+        → Webhook Event (signed)
+          → Fetch processed data via API/SDK
+```
+
+## Create an email connection
+
+Set `type: "EMAIL"` and configure the inbox. `emailAllowedFormats` is
+**required and non-empty** for email connections; the other fields are optional.
+
+<Tabs>
+  <Tab title="TypeScript SDK">
+
+```ts
+import FileFeed from '@filefeed/sdk';
+
+const filefeed = new FileFeed({ apiKey: process.env.FILEFEED_API_KEY! });
+
+const conn = await filefeed.connections.create({
+  name: 'Acme :: Orders',
+  type: 'EMAIL',
+  emailAllowedFormats: ['csv', 'xlsx'],   // required & non-empty for EMAIL
+  emailAllowedSenders: ['@acme.com'],      // optional; empty = accept any sender
+  emailSubjectFilter: 'orders',            // optional substring match
+});
+
+// The address senders mail files to (server-minted unless you supplied one):
+console.log(conn.emailInbox?.inboundAddress);
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X POST "https://api.sftpsync.io/connections" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme :: Orders",
+    "type": "EMAIL",
+    "emailAllowedFormats": ["csv", "xlsx"],
+    "emailAllowedSenders": ["@acme.com"],
+    "emailSubjectFilter": "orders"
+  }'
+```
+
+  </Tab>
+</Tabs>
+
+The response includes an `emailInbox` object (present only for `EMAIL`
+connections):
+
+```json
+{
+  "id": "conn_123",
+  "name": "Acme :: Orders",
+  "type": "EMAIL",
+  "emailInbox": {
+    "inboundAddress": "feed-7t9w@in.filefeed.io",
+    "allowedSenders": ["@acme.com"],
+    "allowedFormats": ["csv", "xlsx"],
+    "subjectFilter": "orders"
+  }
+}
+```
+
+<Note>
+Request fields are prefixed `email*` (`emailAllowedSenders`,
+`emailAllowedFormats`, `emailSubjectFilter`, `emailInboundAddress`). The
+response returns the same config under `emailInbox` with **short** names
+(`allowedSenders`, `allowedFormats`, `subjectFilter`, `inboundAddress`).
+</Note>
+
+## The inbound address
+
+Each email connection has a globally unique **inbound address** — the routing
+key mail is delivered to. You can let FileFeed mint one, or supply your own:
+
+- **Server-generated (recommended):** omit `emailInboundAddress` and FileFeed
+  returns one shaped like `feed-7t9w@in.filefeed.io`.
+- **Custom:** pass `emailInboundAddress` shaped as
+  `{workspace-slug}.{connection-name-slug}@in.filefeed.io` — e.g.
+  `acme.orders-import@in.filefeed.io` for the workspace `acme`.
+
+Two rules apply to a custom address:
+
+| Condition | Result |
+| --- | --- |
+| The part before the first `.` is not your workspace slug | `400 Bad Request` |
+| The address is already in use by another connection | `409 Conflict` |
+
+<Tip>
+The inbound address is **immutable** — it's set at create time and can't be
+changed on update. Pick a stable connection name, or use the generated address.
+</Tip>
+
+## Configure who can send, and what
+
+These controls are your security boundary — there is no separate credential, so
+the allow-list is what keeps an inbox private.
+
+### Allowed senders
+
+`emailAllowedSenders` restricts which `From` addresses are accepted. Each entry
+is either a full address or a root-domain pattern:
+
+- `alice@acme.com` — matches that exact address
+- `@acme.com` — matches any `*@acme.com` (but **not** subdomains like
+  `x.acme.com` — list those explicitly)
+
+An **empty or omitted** list accepts **any** sender. Max 50 entries.
+
+### Allowed formats
+
+`emailAllowedFormats` is the attachment **accept-list** and is **required
+(non-empty)** for email connections. Accepted values: `csv`, `xlsx`, `xls`,
+`json`, `xml`, `tsv`. An attachment whose extension isn't listed is rejected.
+
+<Note>
+This is a configuration-time accept-list and is decoupled from what the
+transform parser ultimately supports — accepting a format here doesn't guarantee
+downstream transform support for it.
+</Note>
+
+### Subject filter
+
+`emailSubjectFilter` is an optional, case-insensitive **substring** the subject
+must contain for the message to be processed (e.g. `orders` matches
+`Weekly Orders Export`). Omit it to accept any subject — including an **empty
+subject**, which is common for automated senders that just drop a file.
+
+## How inbound ingestion works
+
+When a message arrives, FileFeed:
+
+1. **Routes** it to the connection by the inbound address. An address that
+   matches no connection is dropped.
+2. **Validates the envelope**, in order: allowed senders → attachment format →
+   subject filter.
+3. **Processes the first attachment** through the connection's active inbound
+   pipeline. (Today only the first attachment is processed; additional
+   attachments are ignored.)
+4. **Emits a signed webhook** on completion, exactly like the SFTP and outbound
+   flows. See [Webhook Listener](/automated-flows/sftp#webhook-listener) and
+   [Retrieve processed data](/automated-flows/sftp#retrieve-processed-data) —
+   the mechanics are identical once a file is in the pipeline.
+
+## Why was my email rejected?
+
+Every rejection (except an unknown inbound address) is recorded as a **failed**
+pipeline run, visible in **Dashboard → Pipeline Runs** next to successful ones,
+with the reason in the run's error message:
+
+| Reason | What happened |
+| --- | --- |
+| `Sender ... is not in the allow list` | The `From` address didn't match `emailAllowedSenders` |
+| `Attachment format .ext is not allowed` | The attachment's extension isn't in `emailAllowedFormats` |
+| `Subject does not match filter "..."` | The subject didn't contain `emailSubjectFilter` |
+| `Email contained no attachment` | The message had no attachment to process |
+
+A message sent to an address that matches **no** connection, or to a connection
+with no active inbound pipeline, is dropped without a run (there's nothing to
+attribute it to).
+
+## Browse received files
+
+Attachments received by an email connection are retained and browsable the same
+way as SFTP drives — in the dashboard's **Documents** view for that connection.
+
+## Checklist
+
+- [ ] Get API key (Dashboard → My Account → Security Settings)
+- [ ] Create an `EMAIL` connection (set `emailAllowedFormats`; optionally
+      `emailAllowedSenders` / `emailSubjectFilter`)
+- [ ] Note the `emailInbox.inboundAddress` and share it with your sender
+- [ ] Define a Schema and create + activate an **inbound** Pipeline on the connection
+- [ ] Register a Webhook (store secret, verify signature)
+- [ ] Send a test email with an attachment and confirm the run completes
+- [ ] Retrieve processed data and persist (SDK or REST)

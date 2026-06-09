@@ -47,10 +47,10 @@ Automated Flows allow you to set up file processing workflows that run automatic
 ## Supported Integrations
 
 - **SFTP (Inbound)** - Senders upload files to dedicated SFTP folders per connection
+- **Email (Inbound)** - Senders email files to a dedicated inbound address per connection; FileFeed validates the message and runs the attachment through the pipeline
 - **API (Outbound)** - Your backend pushes JSON data via the multipart upload API
 - **Webhooks** - Receive notifications when files are processed
 - **Cloud Storage** - Coming soon
-- **Email** - Coming soon
 
 ## Flow Types
 
@@ -77,6 +77,24 @@ SFTP Upload (per Connection)
             → Persist to your DB
 ```
 
+### Inbound (Email)
+
+```
+Sender emails a file to {connection}@in.filefeed.io
+  → FileFeed receives the message
+    → Validate sender / attachment format / subject
+      → Pipeline (Schema + Mappings + Transforms)  (first attachment)
+        → Processing & Validation
+          → Webhook Event (signed)
+            → Fetch processed data via API/SDK
+              → Persist to your DB
+```
+
+A rejected message (sender not allow-listed, disallowed attachment format,
+subject-filter miss, or no attachment) is recorded as a **failed** pipeline run
+so it's visible in **Dashboard → Pipeline Runs** alongside successful ones — see
+[Email Flow](/automated-flows/email).
+
 ### Outbound (API)
 
 ```
@@ -97,9 +115,12 @@ Respond quickly to webhooks and process asynchronously (queue/worker). Use the S
 
 ## Next Steps
 
-<CardGroup cols={3}>
+<CardGroup cols={2}>
   <Card title="SFTP Flow" icon="server" href="/automated-flows/sftp">
     Inbound: SFTP setup, webhooks, monitoring.
+  </Card>
+  <Card title="Email Flow" icon="envelope" href="/automated-flows/email">
+    Inbound: email files to a dedicated address; sender/format/subject rules.
   </Card>
   <Card title="Outbound Flow" icon="arrow-up-from-bracket" href="/automated-flows/outbound">
     Push JSON data via API multipart uploads.

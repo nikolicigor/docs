@@ -160,7 +160,7 @@
       "delete": { "tags": ["Connections"], "summary": "Delete connection", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "204": { "description": "Deleted" } } }
     },
     "/connections/{id}/test-connection": {
-      "post": { "tags": ["Connections"], "summary": "Test SFTP connection", "operationId": "testConnection", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Connection result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TestConnectionResponse" }, "example": { "success": true, "message": "Connected" } } } } } }
+      "post": { "tags": ["Connections"], "summary": "Test SFTP connection", "description": "Verifies an SFTP connection with a live login. For an EMAIL connection this is a no-op that returns `success: false` with an explanatory message (still HTTP 200, not an error).", "operationId": "testConnection", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Connection result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TestConnectionResponse" }, "example": { "success": true, "message": "Connected" } } } } } }
     },
 
     "/clients": {
@@ -452,6 +452,7 @@
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["SFTP", "EMAIL"], "description": "Connection kind. Always present as of API version `2026-05-25`." },
           "sftpUsername": { "type": "string" },
           "useHostedSFTP": { "type": "boolean" },
           "awsUserName": { "type": "string", "description": "Server-generated slug ({name}-{workspace}). Used as clientName for outbound uploads." },
@@ -459,15 +460,28 @@
           "ipWhitelist": { "type": "array", "items": { "type": "string" } },
           "workspaceId": { "type": "string" },
           "sftpServerDataId": { "type": "string" },
+          "emailInbox": { "$ref": "#/components/schemas/EmailInbox" },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "name", "workspaceId", "createdAt", "updatedAt"]
+        "required": ["id", "name", "type", "workspaceId", "createdAt", "updatedAt"]
+      },
+      "EmailInbox": {
+        "type": "object",
+        "description": "Resolved inbox config for an EMAIL connection. Returned on `Connection.emailInbox`, present only when `type` = `EMAIL`.",
+        "properties": {
+          "inboundAddress": { "type": "string", "description": "Address mail is delivered to, e.g. feed-7t9w@in.filefeed.io." },
+          "allowedSenders": { "type": "array", "items": { "type": "string" }, "description": "Full emails or @domain.com patterns. Empty = allow all senders." },
+          "allowedFormats": { "type": "array", "items": { "type": "string", "enum": ["csv", "xlsx", "xls", "json", "xml", "tsv"] } },
+          "subjectFilter": { "type": "string", "nullable": true, "description": "Case-insensitive subject substring filter. Null = no filter." }
+        },
+        "required": ["inboundAddress", "allowedSenders", "allowedFormats", "subjectFilter"]
       },
       "CreateConnectionParams": {
         "type": "object",
         "properties": {
           "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["SFTP", "EMAIL"], "default": "SFTP", "description": "Connection kind. Defaults to SFTP. Set to EMAIL to create an email inbox connection — the email* fields then apply and SFTP fields are ignored." },
           "sftpUsername": { "type": "string" },
           "sftpPassword": { "type": "string" },
           "sftpPrivateKey": { "type": "string" },
@@ -477,7 +491,11 @@
           "awsPublicKey": { "type": "string" },
           "awsPassword": { "type": "string" },
           "ipWhitelist": { "type": "array", "items": { "type": "string" } },
-          "sftpServerDataId": { "type": "string" }
+          "sftpServerDataId": { "type": "string" },
+          "emailAllowedSenders": { "type": "array", "items": { "type": "string" }, "maxItems": 50, "description": "EMAIL only. Allowed senders — full address (alice@acme.com) or root-domain pattern (@acme.com). Empty/omitted = accept any sender." },
+          "emailAllowedFormats": { "type": "array", "items": { "type": "string", "enum": ["csv", "xlsx", "xls", "json", "xml", "tsv"] }, "minItems": 1, "description": "EMAIL only. Attachment accept-list. Required and non-empty for EMAIL connections." },
+          "emailSubjectFilter": { "type": "string", "maxLength": 200, "description": "EMAIL only. Case-insensitive substring required in the subject. Empty = no filter." },
+          "emailInboundAddress": { "type": "string", "format": "email", "maxLength": 320, "description": "EMAIL only, create-only and immutable. Custom inbound address {workspace-slug}.{connection-slug}@in.filefeed.io. Omit to have one generated (feed-XXXX@in.filefeed.io)." }
         },
         "required": ["name"]
       },
