@@ -59,17 +59,34 @@ They connect to their dedicated SFTP space using their assigned username and
 password with the host specified on the connection's configuration page.
 
 ```json
-// Example connection object (v1 callers may see this returned as a `client`)
+// Example connection object (v1 callers may see this returned as a `client`).
+// Credentials (sftpPassword / sftpPrivateKey / sftpPassphrase / awsPassword)
+// are write-only and never returned on reads.
 {
-  "connectionId": "c4b3f495-5dfc-4a91-b604-a8e66ab4a220",
-  "name": "acme_logistics",
-  "displayName": "Acme Logistics Inc.",
-  "status": "active",
-  "created": "2023-05-15T10:30:00Z",
-  "lastActive": "2023-06-01T08:45:22Z",
-  "sftpUsername": "acme_sftp"
+  "id": "c4b3f495-5dfc-4a91-b604-a8e66ab4a220",
+  "name": "Acme Logistics Inc.",
+  "type": "SFTP",
+  "sftpUsername": "acme_sftp",
+  "useHostedSFTP": true,
+  "awsUserName": "ws-acme-logi-7t9w",
+  "sftpServer": {
+    "id": "srv_123",
+    "host": "sftp.sftpsync.io",
+    "port": 22,
+    "isAwsHosted": true,
+    "status": "active"
+  },
+  "createdAt": "2023-05-15T10:30:00Z",
+  "updatedAt": "2023-06-01T08:45:22Z"
 }
 ```
+
+<Note>
+**FileFeed-hosted vs self-hosted SFTP.** Set `useHostedSFTP: true` (default) to
+have FileFeed provision the SFTP server. For a **self-hosted** connection
+(`useHostedSFTP: false`) FileFeed dials out to your own server — supply
+`sftpHost`, `sftpPort`, `sftpRemotePath`, and credentials on create/update.
+</Note>
 
 ### 3. Schemas
 
@@ -128,6 +145,14 @@ handle transformations (which are handled separately by pipelines).
   ]
 }
 ```
+
+<Note>
+The JSON above illustrates the **concept** of a schema. Over the API a schema's
+structure is supplied as a single JSON Schema `definition` object (`{ type,
+properties, required }`) — see the [Schema endpoints](/api-reference/openapi)
+and the SDK `schemas.create({ name, definition })` example. The legacy `fields`
+array is not used by the API.
+</Note>
 
 ### 4. Pipelines
 
