@@ -2,19 +2,23 @@
   "openapi": "3.0.3",
   "info": {
     "title": "FileFeed API",
-    "version": "1.0.0",
-    "description": "Official FileFeed REST API for pipeline runs, clients, schemas, pipelines, and webhooks."
+    "version": "2026-05-25",
+    "description": "Official FileFeed REST API for connections, pipelines, schemas, pipeline runs, webhooks, outbound uploads, documents, files, and notifications. Date-based API versioning is controlled by the `FileFeed-Version` request header (default `2024-09-01`; latest `2026-05-25`); this document describes the `2026-05-25` shape."
   },
   "servers": [
     { "url": "https://api.sftpsync.io" }
   ],
   "tags": [
-    { "name": "Pipeline Runs" },
-    { "name": "Clients" },
-    { "name": "Schemas" },
+    { "name": "Connections" },
     { "name": "Pipelines" },
+    { "name": "Schemas" },
+    { "name": "Pipeline Runs" },
     { "name": "Webhooks" },
-    { "name": "Outbound Uploads" }
+    { "name": "Outbound Uploads" },
+    { "name": "Documents" },
+    { "name": "Files" },
+    { "name": "Notifications" },
+    { "name": "Clients (deprecated)" }
   ],
   "security": [
     { "ApiKeyAuth": [] }
@@ -213,7 +217,7 @@
 
     "/webhooks": {
       "get": { "tags": ["Webhooks"], "summary": "List webhooks", "responses": { "200": { "description": "Webhooks", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Webhook" } } } } } } },
-      "post": { "tags": ["Webhooks"], "summary": "Create webhook", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWebhookParams" } } } }, "responses": { "200": { "description": "Webhook", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Webhook" } } } } } }
+      "post": { "tags": ["Webhooks"], "summary": "Create webhook", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWebhookParams" } } } }, "responses": { "201": { "description": "Webhook created. The response includes the signing `secret` — shown once, never returned again.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWebhookResponse" } } } } } }
     },
     "/webhooks/{id}": {
       "get": { "tags": ["Webhooks"], "summary": "Get webhook", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Webhook", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Webhook" } } } }, "404": { "$ref": "#/components/responses/NotFound" } } },
@@ -401,9 +405,11 @@
           "clientId": { "type": "string" },
           "schemaId": { "type": "string" },
           "pipelineId": { "type": "string" },
-          "workspaceId": { "type": "string" }
+          "pipelineName": { "type": "string", "nullable": true, "description": "Name of the originating pipeline. `DELETED PIPELINE` when the pipeline was deleted." },
+          "isPipelineDeleted": { "type": "boolean", "description": "True when the originating pipeline has been deleted." },
+          "client": { "type": "object", "nullable": true, "description": "Originating connection's display name, resolved from the SFTP/email child connection.", "properties": { "name": { "type": "string", "nullable": true } } }
         },
-        "required": ["id", "filename", "status", "createdAt", "updatedAt", "clientId", "workspaceId"]
+        "required": ["id", "filename", "status", "createdAt", "updatedAt", "clientId"]
       },
       "PresignedUrlResponse": {
         "type": "object",
@@ -455,16 +461,32 @@
           "type": { "type": "string", "enum": ["SFTP", "EMAIL"], "description": "Connection kind. Always present as of API version `2026-05-25`." },
           "sftpUsername": { "type": "string" },
           "useHostedSFTP": { "type": "boolean" },
-          "awsUserName": { "type": "string", "description": "Server-generated slug ({name}-{workspace}). Used as clientName for outbound uploads." },
+          "awsUserName": { "type": "string", "description": "Server-generated SFTP username slug for a FileFeed-hosted connection. (Outbound uploads reference a connection by its human-readable `name`, not this slug.)" },
           "awsPublicKey": { "type": "string" },
           "ipWhitelist": { "type": "array", "items": { "type": "string" } },
-          "workspaceId": { "type": "string" },
           "sftpServerDataId": { "type": "string" },
+          "sftpServer": { "$ref": "#/components/schemas/SftpServerData" },
           "emailInbox": { "$ref": "#/components/schemas/EmailInbox" },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "name", "type", "workspaceId", "createdAt", "updatedAt"]
+        "required": ["id", "name", "type", "createdAt", "updatedAt"]
+      },
+      "SftpServerData": {
+        "type": "object",
+        "description": "The SFTP server a connection is bound to. For a self-hosted connection, host/port/rootDirectory describe the customer endpoint FileFeed dials out to; for a hosted connection, the FileFeed-managed AWS Transfer server.",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "isAwsHosted": { "type": "boolean" },
+          "host": { "type": "string" },
+          "port": { "type": "integer" },
+          "rootDirectory": { "type": "string", "nullable": true },
+          "status": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "name", "isAwsHosted", "host", "port", "status"]
       },
       "EmailInbox": {
         "type": "object",
@@ -492,6 +514,9 @@
           "awsPassword": { "type": "string" },
           "ipWhitelist": { "type": "array", "items": { "type": "string" } },
           "sftpServerDataId": { "type": "string" },
+          "sftpHost": { "type": "string", "description": "Self-hosted SFTP (useHostedSFTP=false): the customer SFTP host FileFeed dials out to." },
+          "sftpPort": { "type": "integer", "description": "Self-hosted SFTP port." },
+          "sftpRemotePath": { "type": "string", "description": "Self-hosted SFTP remote directory." },
           "emailAllowedSenders": { "type": "array", "items": { "type": "string" }, "maxItems": 50, "description": "EMAIL only. Allowed senders — full address (alice@acme.com) or root-domain pattern (@acme.com). Empty/omitted = accept any sender." },
           "emailAllowedFormats": { "type": "array", "items": { "type": "string", "enum": ["csv", "xlsx", "xls", "json", "xml", "tsv"] }, "minItems": 1, "description": "EMAIL only. Attachment accept-list. Required and non-empty for EMAIL connections." },
           "emailSubjectFilter": { "type": "string", "maxLength": 200, "description": "EMAIL only. Case-insensitive substring required in the subject. Empty = no filter." },
@@ -523,39 +548,38 @@
         "required": ["success", "message"]
       },
 
-      "SchemaField": {
+      "SchemaDefinition": {
         "type": "object",
+        "description": "A JSON Schema document describing the columns the processed data must conform to.",
         "properties": {
-          "name": { "type": "string" },
-          "type": { "type": "string" },
-          "required": { "type": "boolean" },
-          "description": { "type": "string" },
-          "validation": { "type": "object", "additionalProperties": true }
+          "type": { "type": "string", "description": "JSON Schema root type — typically `object`." },
+          "properties": { "type": "object", "additionalProperties": true, "description": "Map of column name to JSON Schema property, e.g. { id: { type: \"string\" } }." },
+          "required": { "type": "array", "items": { "type": "string" }, "description": "Column names that must be present (at least one)." }
         },
-        "required": ["name", "type"]
+        "additionalProperties": true
       },
       "Schema": {
         "type": "object",
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
-          "version": { "type": "integer" },
           "description": { "type": "string" },
-          "fields": { "type": "array", "items": { "$ref": "#/components/schemas/SchemaField" } },
-          "workspaceId": { "type": "string" },
+          "definition": { "$ref": "#/components/schemas/SchemaDefinition" },
+          "isActive": { "type": "boolean", "description": "Always present in responses (currently always true)." },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "name", "fields", "workspaceId", "createdAt", "updatedAt"]
+        "required": ["id", "name", "definition", "createdAt", "updatedAt"]
       },
       "CreateSchemaParams": {
         "type": "object",
+        "description": "The schema body is a JSON Schema `definition` object. The legacy `fields` array is ignored by the API.",
         "properties": {
           "name": { "type": "string" },
           "description": { "type": "string" },
-          "fields": { "type": "array", "items": { "$ref": "#/components/schemas/SchemaField" } }
+          "definition": { "$ref": "#/components/schemas/SchemaDefinition" }
         },
-        "required": ["name", "fields"]
+        "required": ["name", "definition"]
       },
       "UpdateSchemaParams": {
         "allOf": [ { "$ref": "#/components/schemas/CreateSchemaParams" } ]
@@ -569,20 +593,31 @@
         "type": "object",
         "properties": {
           "valid": { "type": "boolean" },
-          "errors": { "type": "array", "items": { "type": "object", "properties": { "field": { "type": "string" }, "message": { "type": "string" } }, "required": ["field", "message"] } }
+          "errors": { "type": "array", "description": "Raw AJV error objects (present when `valid` is false).", "items": { "type": "object", "properties": { "instancePath": { "type": "string" }, "schemaPath": { "type": "string" }, "keyword": { "type": "string" }, "params": { "type": "object", "additionalProperties": true }, "message": { "type": "string" } } } }
         },
         "required": ["valid"]
       },
 
       "FieldMapping": {
         "type": "object",
+        "description": "One field mapping. Either sourced ({ source, target, transform? } — copies a column from the input) or static ({ target, value } — writes a literal constant into the target on every row; omit `source`).",
         "properties": {
-          "sourceField": { "type": "string" },
-          "targetField": { "type": "string" },
-          "transform": { "type": "string" },
-          "defaultValue": { }
+          "source": { "type": "string", "description": "Source column name. Omit for a static mapping." },
+          "target": { "type": "string", "description": "Target field/column name." },
+          "transform": { "type": "string", "description": "Optional transform key (sourced mappings only)." },
+          "value": { "type": "string", "description": "Static literal written to `target` on every row. Presence marks the mapping static." }
         },
-        "required": ["sourceField", "targetField"]
+        "required": ["target"]
+      },
+      "PipelineMappings": {
+        "type": "object",
+        "description": "The mapping definition the API expects. Field mappings live under `fieldMappings`; not a bare array.",
+        "properties": {
+          "fieldMappings": { "type": "array", "items": { "$ref": "#/components/schemas/FieldMapping" } },
+          "options": { "type": "object", "additionalProperties": true, "description": "Parsing hints: delimiter, skipHeaderRow, detectTypes, validateData." },
+          "validations": { "type": "object", "additionalProperties": true, "description": "Optional per-target validation overrides, keyed by target column." }
+        },
+        "required": ["fieldMappings"]
       },
       "Pipeline": {
         "type": "object",
@@ -590,24 +625,25 @@
           "id": { "type": "string" },
           "name": { "type": "string" },
           "direction": { "type": "string", "enum": ["inbound", "outbound"], "default": "inbound", "description": "Pipeline direction. Outbound pipelines accept data via the Outbound Uploads API." },
-          "mappings": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/FieldMapping" } }, { "type": "object", "additionalProperties": true } ] },
+          "mappings": { "$ref": "#/components/schemas/PipelineMappings" },
           "isActive": { "type": "boolean" },
-          "workspaceId": { "type": "string" },
-          "clientId": { "type": "string" },
+          "clientId": { "type": "string", "description": "Connection id this pipeline is bound to." },
           "schemaId": { "type": "string" },
+          "webhooks": { "type": "array", "description": "Webhooks linked to this pipeline. Present and non-empty only when the pipeline has associated webhooks.", "items": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "url": { "type": "string", "format": "uri" } } } },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "name", "mappings", "isActive", "workspaceId", "clientId", "schemaId", "createdAt", "updatedAt"]
+        "required": ["id", "name", "mappings", "isActive", "clientId", "schemaId", "createdAt", "updatedAt"]
       },
       "CreatePipelineParams": {
         "type": "object",
         "properties": {
           "name": { "type": "string" },
           "direction": { "type": "string", "enum": ["inbound", "outbound"], "default": "inbound", "description": "Set to \"outbound\" to create a pipeline that accepts data via the Outbound Uploads API." },
-          "mappings": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/FieldMapping" } }, { "type": "object", "additionalProperties": true } ] },
-          "clientId": { "type": "string" },
+          "mappings": { "$ref": "#/components/schemas/PipelineMappings" },
+          "clientId": { "type": "string", "description": "Connection id this pipeline is bound to." },
           "schemaId": { "type": "string" },
+          "isActive": { "type": "boolean", "description": "Whether the pipeline is active on creation. Backend default: true." },
           "webhookIds": { "type": "array", "items": { "type": "string" } }
         },
         "required": ["name", "mappings", "clientId", "schemaId"]
@@ -618,20 +654,26 @@
 
       "Webhook": {
         "type": "object",
+        "description": "Webhook read shape. The signing `secret` is NOT returned on reads — it is shown only once on the create response (see CreateWebhookResponse).",
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
           "description": { "type": "string" },
           "url": { "type": "string", "format": "uri" },
-          "eventType": { "type": "string" },
+          "eventType": { "type": "string", "description": "Defaults to GENERAL. Set server-side; not accepted on create/update." },
           "headers": { "type": "object", "additionalProperties": { "type": "string" } },
-          "secret": { "type": "string" },
           "isActive": { "type": "boolean" },
-          "workspaceId": { "type": "string" },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "name", "url", "eventType", "isActive", "workspaceId", "createdAt", "updatedAt"]
+        "required": ["id", "name", "url", "eventType", "isActive", "createdAt", "updatedAt"]
+      },
+      "CreateWebhookResponse": {
+        "description": "Returned by `POST /webhooks` only. Identical to Webhook plus the generated signing `secret`, which is shown once here and never again.",
+        "allOf": [
+          { "$ref": "#/components/schemas/Webhook" },
+          { "type": "object", "properties": { "secret": { "type": "string", "description": "HMAC signing secret. Store it now — it is never returned again." } }, "required": ["secret"] }
+        ]
       },
       "CreateWebhookParams": {
         "type": "object",
@@ -657,6 +699,8 @@
           "success": { "type": "boolean" },
           "statusCode": { "type": "integer" },
           "errorMessage": { "type": "string" },
+          "webhookName": { "type": "string", "description": "Display name of the webhook this delivery targeted, when available." },
+          "webhookUrl": { "type": "string", "format": "uri", "description": "Destination URL of the webhook this delivery targeted, when available." },
           "timestamp": { "type": "string", "format": "date-time" }
         },
         "required": ["id", "webhookId", "eventType", "success", "statusCode", "timestamp"]
