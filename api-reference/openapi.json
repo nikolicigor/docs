@@ -2,19 +2,23 @@
   "openapi": "3.0.3",
   "info": {
     "title": "FileFeed API",
-    "version": "1.0.0",
-    "description": "Official FileFeed REST API for pipeline runs, clients, schemas, pipelines, and webhooks."
+    "version": "2026-05-25",
+    "description": "Official FileFeed REST API for connections, pipelines, schemas, pipeline runs, webhooks, outbound uploads, documents, files, and notifications. Date-based API versioning is controlled by the `FileFeed-Version` request header (default `2024-09-01`; latest `2026-05-25`); this document describes the `2026-05-25` shape."
   },
   "servers": [
     { "url": "https://api.sftpsync.io" }
   ],
   "tags": [
-    { "name": "Pipeline Runs" },
-    { "name": "Clients" },
-    { "name": "Schemas" },
+    { "name": "Connections" },
     { "name": "Pipelines" },
+    { "name": "Schemas" },
+    { "name": "Pipeline Runs" },
     { "name": "Webhooks" },
-    { "name": "Outbound Uploads" }
+    { "name": "Outbound Uploads" },
+    { "name": "Documents" },
+    { "name": "Files" },
+    { "name": "Notifications" },
+    { "name": "Clients (deprecated)" }
   ],
   "security": [
     { "ApiKeyAuth": [] }
@@ -213,7 +217,7 @@
 
     "/webhooks": {
       "get": { "tags": ["Webhooks"], "summary": "List webhooks", "responses": { "200": { "description": "Webhooks", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Webhook" } } } } } } },
-      "post": { "tags": ["Webhooks"], "summary": "Create webhook", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWebhookParams" } } } }, "responses": { "200": { "description": "Webhook", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Webhook" } } } } } }
+      "post": { "tags": ["Webhooks"], "summary": "Create webhook", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWebhookParams" } } } }, "responses": { "201": { "description": "Webhook created. The response includes the signing `secret` — shown once, never returned again.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWebhookResponse" } } } } } }
     },
     "/webhooks/{id}": {
       "get": { "tags": ["Webhooks"], "summary": "Get webhook", "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Webhook", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Webhook" } } } }, "404": { "$ref": "#/components/responses/NotFound" } } },
@@ -341,6 +345,58 @@
           "404": { "$ref": "#/components/responses/NotFound" }
         }
       }
+    },
+    "/documents/browse": {
+      "get": { "tags": ["Documents"], "summary": "Browse documents", "description": "List one page of folders and files under a path within a connection (drive).", "parameters": [ { "name": "connectionId", "in": "query", "required": true, "schema": { "type": "string" } }, { "name": "path", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Folder path relative to the connection root (empty = root)." }, { "name": "token", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Pagination token from a previous page." } ], "responses": { "200": { "description": "One page of folders and files", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BrowseResponse" } } } } } }
+    },
+    "/documents/metadata": {
+      "get": { "tags": ["Documents"], "summary": "Get document metadata", "parameters": [ { "name": "connectionId", "in": "query", "required": true, "schema": { "type": "string" } }, { "name": "path", "in": "query", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "File metadata", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DocumentMetadata" } } } }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/documents/download": {
+      "get": { "tags": ["Documents"], "summary": "Get a presigned download URL", "parameters": [ { "name": "connectionId", "in": "query", "required": true, "schema": { "type": "string" } }, { "name": "path", "in": "query", "required": true, "schema": { "type": "string" } } ], "responses": { "200": { "description": "Presigned download URL", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DownloadUrl" } } } } } }
+    },
+    "/documents/upload-url": {
+      "post": { "tags": ["Documents"], "summary": "Create a presigned upload ticket", "description": "Server picks single (one PUT) or multipart (one PUT per part) based on size.", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateUploadTicketParams" } } } }, "responses": { "200": { "description": "Upload ticket", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UploadTicket" } } } }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/documents/upload-complete": {
+      "post": { "tags": ["Documents"], "summary": "Complete a multipart upload", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CompleteUploadParams" } } } }, "responses": { "200": { "description": "Completed object", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UploadCompleteResult" } } } } } }
+    },
+    "/documents/upload-abort": {
+      "post": { "tags": ["Documents"], "summary": "Abort a multipart upload", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AbortUploadParams" } } } }, "responses": { "200": { "description": "Aborted", "content": { "application/json": { "schema": { "type": "object", "properties": { "aborted": { "type": "boolean", "enum": [true] } }, "required": ["aborted"] } } } } } }
+    },
+    "/documents/folders": {
+      "post": { "tags": ["Documents"], "summary": "Create a folder", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateFolderParams" } } } }, "responses": { "200": { "description": "Created folder", "content": { "application/json": { "schema": { "type": "object", "properties": { "created": { "type": "boolean", "enum": [true] }, "path": { "type": "string" } }, "required": ["created", "path"] } } } }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "$ref": "#/components/responses/Conflict" } } }
+    },
+    "/documents/move": {
+      "post": { "tags": ["Documents"], "summary": "Move a file or folder", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MoveParams" } } } }, "responses": { "200": { "description": "Moved", "content": { "application/json": { "schema": { "type": "object", "properties": { "moved": { "type": "boolean", "enum": [true] } }, "required": ["moved"] } } } }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/documents/rename": {
+      "post": { "tags": ["Documents"], "summary": "Rename a file or folder", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RenameParams" } } } }, "responses": { "200": { "description": "Renamed", "content": { "application/json": { "schema": { "type": "object", "properties": { "renamed": { "type": "boolean", "enum": [true] }, "path": { "type": "string" } }, "required": ["renamed", "path"] } } } }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/documents/object": {
+      "delete": { "tags": ["Documents"], "summary": "Delete a file", "description": "Pass force=true (admin/owner only) to override pipeline-folder protection.", "parameters": [ { "name": "connectionId", "in": "query", "required": true, "schema": { "type": "string" } }, { "name": "path", "in": "query", "required": true, "schema": { "type": "string" } }, { "name": "force", "in": "query", "required": false, "schema": { "type": "boolean" } } ], "responses": { "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeleteResult" } } } }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/documents/folder": {
+      "delete": { "tags": ["Documents"], "summary": "Delete a folder and its contents", "description": "Pass force=true (admin/owner only) to override pipeline-folder protection.", "parameters": [ { "name": "connectionId", "in": "query", "required": true, "schema": { "type": "string" } }, { "name": "path", "in": "query", "required": true, "schema": { "type": "string" } }, { "name": "force", "in": "query", "required": false, "schema": { "type": "boolean" } } ], "responses": { "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeleteResult" } } } }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/documents/bulk-delete": {
+      "post": { "tags": ["Documents"], "summary": "Delete multiple items", "description": "Returns the count deleted plus a per-item list of failures — a partial failure does not error.", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkDeleteParams" } } } }, "responses": { "200": { "description": "Bulk delete result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkDeleteResult" } } } } } }
+    },
+    "/files/json": {
+      "get": { "tags": ["Files"], "summary": "Get a processed JSON file by name", "description": "Retrieve a processed JSON file's content, located by connection name, file name, and pipeline. Supply offset/limit to page an array file.", "parameters": [ { "name": "clientName", "in": "query", "required": true, "schema": { "type": "string" }, "description": "The connection's display name the file belongs to." }, { "name": "fileName", "in": "query", "required": true, "schema": { "type": "string" }, "description": "File name, without extension." }, { "name": "pipelineId", "in": "query", "required": true, "schema": { "type": "string" } }, { "name": "offset", "in": "query", "required": false, "schema": { "type": "integer" } }, { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer" } } ], "responses": { "200": { "description": "Processed JSON file content", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JsonFileResponse" } } } }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/files/search": {
+      "post": { "tags": ["Files"], "summary": "Search across processed files", "description": "Search rows across processed files belonging to the given pipeline runs. pipelineRunIds is required; omit searchTerm to return all rows.", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SearchFilesParams" } } } }, "responses": { "200": { "description": "Search results", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SearchResults" } } } } } }
+    },
+    "/notifications/preferences/{clientId}": {
+      "get": { "tags": ["Notifications"], "summary": "Get notification preferences", "description": "List a connection's notification preferences, ordered by event type then channel. The path segment is named `clientId` for back-compat — it is the connection id.", "parameters": [ { "name": "clientId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Connection id." } ], "responses": { "200": { "description": "Preferences", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/NotificationPreference" } } } } } } },
+      "put": { "tags": ["Notifications"], "summary": "Set notification preferences", "description": "Upsert a connection's preferences, matched on (eventType, channel). An enabled preference requires at least one recipient.", "parameters": [ { "name": "clientId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Connection id." } ], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SetNotificationPreferencesParams" } } } }, "responses": { "200": { "description": "Updated preferences", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/NotificationPreference" } } } } } } }
+    },
+    "/webhooks/zapier/pipeline-run-events/subscribe": {
+      "post": { "tags": ["Webhooks"], "summary": "Subscribe Zapier to pipeline-run events", "description": "Registers a workspace-level PIPELINE_RUN_EVENT webhook that fires on every run.", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "targetUrl": { "type": "string", "format": "uri" } }, "required": ["targetUrl"] } } } }, "responses": { "200": { "description": "Subscription", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ZapierPipelineRunSubscription" } } } } } }
+    },
+    "/webhooks/zapier/pipeline-run-events/unsubscribe": {
+      "delete": { "tags": ["Webhooks"], "summary": "Unsubscribe Zapier from pipeline-run events", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "id": { "type": "string" } }, "required": ["id"] } } } }, "responses": { "200": { "description": "Unsubscribed", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" } }, "required": ["success"] } } } } } }
     }
   },
   "components": {
@@ -353,7 +409,9 @@
     },
     "responses": {
       "BadRequest": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-      "NotFound": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+      "NotFound": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+      "Forbidden": { "description": "Forbidden — e.g. a protected pipeline folder without admin + force.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+      "Conflict": { "description": "Conflict — e.g. the target already exists.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
     },
     "schemas": {
       "Pagination": {
@@ -401,9 +459,11 @@
           "clientId": { "type": "string" },
           "schemaId": { "type": "string" },
           "pipelineId": { "type": "string" },
-          "workspaceId": { "type": "string" }
+          "pipelineName": { "type": "string", "nullable": true, "description": "Name of the originating pipeline. `DELETED PIPELINE` when the pipeline was deleted." },
+          "isPipelineDeleted": { "type": "boolean", "description": "True when the originating pipeline has been deleted." },
+          "client": { "type": "object", "nullable": true, "description": "Originating connection's display name, resolved from the SFTP/email child connection.", "properties": { "name": { "type": "string", "nullable": true } } }
         },
-        "required": ["id", "filename", "status", "createdAt", "updatedAt", "clientId", "workspaceId"]
+        "required": ["id", "filename", "status", "createdAt", "updatedAt", "clientId"]
       },
       "PresignedUrlResponse": {
         "type": "object",
@@ -455,16 +515,32 @@
           "type": { "type": "string", "enum": ["SFTP", "EMAIL"], "description": "Connection kind. Always present as of API version `2026-05-25`." },
           "sftpUsername": { "type": "string" },
           "useHostedSFTP": { "type": "boolean" },
-          "awsUserName": { "type": "string", "description": "Server-generated slug ({name}-{workspace}). Used as clientName for outbound uploads." },
+          "awsUserName": { "type": "string", "description": "Server-generated SFTP username slug for a FileFeed-hosted connection. (Outbound uploads reference a connection by its human-readable `name`, not this slug.)" },
           "awsPublicKey": { "type": "string" },
           "ipWhitelist": { "type": "array", "items": { "type": "string" } },
-          "workspaceId": { "type": "string" },
           "sftpServerDataId": { "type": "string" },
+          "sftpServer": { "$ref": "#/components/schemas/SftpServerData" },
           "emailInbox": { "$ref": "#/components/schemas/EmailInbox" },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "name", "type", "workspaceId", "createdAt", "updatedAt"]
+        "required": ["id", "name", "type", "createdAt", "updatedAt"]
+      },
+      "SftpServerData": {
+        "type": "object",
+        "description": "The SFTP server a connection is bound to. For a self-hosted connection, host/port/rootDirectory describe the customer endpoint FileFeed dials out to; for a hosted connection, the FileFeed-managed AWS Transfer server.",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "isAwsHosted": { "type": "boolean" },
+          "host": { "type": "string" },
+          "port": { "type": "integer" },
+          "rootDirectory": { "type": "string", "nullable": true },
+          "status": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "name", "isAwsHosted", "host", "port", "status"]
       },
       "EmailInbox": {
         "type": "object",
@@ -492,6 +568,9 @@
           "awsPassword": { "type": "string" },
           "ipWhitelist": { "type": "array", "items": { "type": "string" } },
           "sftpServerDataId": { "type": "string" },
+          "sftpHost": { "type": "string", "description": "Self-hosted SFTP (useHostedSFTP=false): the customer SFTP host FileFeed dials out to." },
+          "sftpPort": { "type": "integer", "description": "Self-hosted SFTP port." },
+          "sftpRemotePath": { "type": "string", "description": "Self-hosted SFTP remote directory." },
           "emailAllowedSenders": { "type": "array", "items": { "type": "string" }, "maxItems": 50, "description": "EMAIL only. Allowed senders — full address (alice@acme.com) or root-domain pattern (@acme.com). Empty/omitted = accept any sender." },
           "emailAllowedFormats": { "type": "array", "items": { "type": "string", "enum": ["csv", "xlsx", "xls", "json", "xml", "tsv"] }, "minItems": 1, "description": "EMAIL only. Attachment accept-list. Required and non-empty for EMAIL connections." },
           "emailSubjectFilter": { "type": "string", "maxLength": 200, "description": "EMAIL only. Case-insensitive substring required in the subject. Empty = no filter." },
@@ -523,39 +602,38 @@
         "required": ["success", "message"]
       },
 
-      "SchemaField": {
+      "SchemaDefinition": {
         "type": "object",
+        "description": "A JSON Schema document describing the columns the processed data must conform to.",
         "properties": {
-          "name": { "type": "string" },
-          "type": { "type": "string" },
-          "required": { "type": "boolean" },
-          "description": { "type": "string" },
-          "validation": { "type": "object", "additionalProperties": true }
+          "type": { "type": "string", "description": "JSON Schema root type — typically `object`." },
+          "properties": { "type": "object", "additionalProperties": true, "description": "Map of column name to JSON Schema property, e.g. { id: { type: \"string\" } }." },
+          "required": { "type": "array", "items": { "type": "string" }, "description": "Column names that must be present (at least one)." }
         },
-        "required": ["name", "type"]
+        "additionalProperties": true
       },
       "Schema": {
         "type": "object",
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
-          "version": { "type": "integer" },
           "description": { "type": "string" },
-          "fields": { "type": "array", "items": { "$ref": "#/components/schemas/SchemaField" } },
-          "workspaceId": { "type": "string" },
+          "definition": { "$ref": "#/components/schemas/SchemaDefinition" },
+          "isActive": { "type": "boolean", "description": "Always present in responses (currently always true)." },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "name", "fields", "workspaceId", "createdAt", "updatedAt"]
+        "required": ["id", "name", "definition", "createdAt", "updatedAt"]
       },
       "CreateSchemaParams": {
         "type": "object",
+        "description": "The schema body is a JSON Schema `definition` object. The legacy `fields` array is ignored by the API.",
         "properties": {
           "name": { "type": "string" },
           "description": { "type": "string" },
-          "fields": { "type": "array", "items": { "$ref": "#/components/schemas/SchemaField" } }
+          "definition": { "$ref": "#/components/schemas/SchemaDefinition" }
         },
-        "required": ["name", "fields"]
+        "required": ["name", "definition"]
       },
       "UpdateSchemaParams": {
         "allOf": [ { "$ref": "#/components/schemas/CreateSchemaParams" } ]
@@ -569,20 +647,31 @@
         "type": "object",
         "properties": {
           "valid": { "type": "boolean" },
-          "errors": { "type": "array", "items": { "type": "object", "properties": { "field": { "type": "string" }, "message": { "type": "string" } }, "required": ["field", "message"] } }
+          "errors": { "type": "array", "description": "Raw AJV error objects (present when `valid` is false).", "items": { "type": "object", "properties": { "instancePath": { "type": "string" }, "schemaPath": { "type": "string" }, "keyword": { "type": "string" }, "params": { "type": "object", "additionalProperties": true }, "message": { "type": "string" } } } }
         },
         "required": ["valid"]
       },
 
       "FieldMapping": {
         "type": "object",
+        "description": "One field mapping. Either sourced ({ source, target, transform? } — copies a column from the input) or static ({ target, value } — writes a literal constant into the target on every row; omit `source`).",
         "properties": {
-          "sourceField": { "type": "string" },
-          "targetField": { "type": "string" },
-          "transform": { "type": "string" },
-          "defaultValue": { }
+          "source": { "type": "string", "description": "Source column name. Omit for a static mapping." },
+          "target": { "type": "string", "description": "Target field/column name." },
+          "transform": { "type": "string", "description": "Optional transform key (sourced mappings only)." },
+          "value": { "type": "string", "description": "Static literal written to `target` on every row. Presence marks the mapping static." }
         },
-        "required": ["sourceField", "targetField"]
+        "required": ["target"]
+      },
+      "PipelineMappings": {
+        "type": "object",
+        "description": "The mapping definition the API expects. Field mappings live under `fieldMappings`; not a bare array.",
+        "properties": {
+          "fieldMappings": { "type": "array", "items": { "$ref": "#/components/schemas/FieldMapping" } },
+          "options": { "type": "object", "additionalProperties": true, "description": "Parsing hints: delimiter, skipHeaderRow, detectTypes, validateData." },
+          "validations": { "type": "object", "additionalProperties": true, "description": "Optional per-target validation overrides, keyed by target column." }
+        },
+        "required": ["fieldMappings"]
       },
       "Pipeline": {
         "type": "object",
@@ -590,24 +679,25 @@
           "id": { "type": "string" },
           "name": { "type": "string" },
           "direction": { "type": "string", "enum": ["inbound", "outbound"], "default": "inbound", "description": "Pipeline direction. Outbound pipelines accept data via the Outbound Uploads API." },
-          "mappings": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/FieldMapping" } }, { "type": "object", "additionalProperties": true } ] },
+          "mappings": { "$ref": "#/components/schemas/PipelineMappings" },
           "isActive": { "type": "boolean" },
-          "workspaceId": { "type": "string" },
-          "clientId": { "type": "string" },
+          "clientId": { "type": "string", "description": "Connection id this pipeline is bound to." },
           "schemaId": { "type": "string" },
+          "webhooks": { "type": "array", "description": "Webhooks linked to this pipeline. Present and non-empty only when the pipeline has associated webhooks.", "items": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "url": { "type": "string", "format": "uri" } } } },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "name", "mappings", "isActive", "workspaceId", "clientId", "schemaId", "createdAt", "updatedAt"]
+        "required": ["id", "name", "mappings", "isActive", "clientId", "schemaId", "createdAt", "updatedAt"]
       },
       "CreatePipelineParams": {
         "type": "object",
         "properties": {
           "name": { "type": "string" },
           "direction": { "type": "string", "enum": ["inbound", "outbound"], "default": "inbound", "description": "Set to \"outbound\" to create a pipeline that accepts data via the Outbound Uploads API." },
-          "mappings": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/FieldMapping" } }, { "type": "object", "additionalProperties": true } ] },
-          "clientId": { "type": "string" },
+          "mappings": { "$ref": "#/components/schemas/PipelineMappings" },
+          "clientId": { "type": "string", "description": "Connection id this pipeline is bound to." },
           "schemaId": { "type": "string" },
+          "isActive": { "type": "boolean", "description": "Whether the pipeline is active on creation. Backend default: true." },
           "webhookIds": { "type": "array", "items": { "type": "string" } }
         },
         "required": ["name", "mappings", "clientId", "schemaId"]
@@ -618,20 +708,26 @@
 
       "Webhook": {
         "type": "object",
+        "description": "Webhook read shape. The signing `secret` is NOT returned on reads — it is shown only once on the create response (see CreateWebhookResponse).",
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
           "description": { "type": "string" },
           "url": { "type": "string", "format": "uri" },
-          "eventType": { "type": "string" },
+          "eventType": { "type": "string", "description": "Defaults to GENERAL. Set server-side; not accepted on create/update." },
           "headers": { "type": "object", "additionalProperties": { "type": "string" } },
-          "secret": { "type": "string" },
           "isActive": { "type": "boolean" },
-          "workspaceId": { "type": "string" },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "name", "url", "eventType", "isActive", "workspaceId", "createdAt", "updatedAt"]
+        "required": ["id", "name", "url", "eventType", "isActive", "createdAt", "updatedAt"]
+      },
+      "CreateWebhookResponse": {
+        "description": "Returned by `POST /webhooks` only. Identical to Webhook plus the generated signing `secret`, which is shown once here and never again.",
+        "allOf": [
+          { "$ref": "#/components/schemas/Webhook" },
+          { "type": "object", "properties": { "secret": { "type": "string", "description": "HMAC signing secret. Store it now — it is never returned again." } }, "required": ["secret"] }
+        ]
       },
       "CreateWebhookParams": {
         "type": "object",
@@ -657,6 +753,8 @@
           "success": { "type": "boolean" },
           "statusCode": { "type": "integer" },
           "errorMessage": { "type": "string" },
+          "webhookName": { "type": "string", "description": "Display name of the webhook this delivery targeted, when available." },
+          "webhookUrl": { "type": "string", "format": "uri", "description": "Destination URL of the webhook this delivery targeted, when available." },
           "timestamp": { "type": "string", "format": "date-time" }
         },
         "required": ["id", "webhookId", "eventType", "success", "statusCode", "timestamp"]
@@ -764,6 +862,291 @@
           "completedAt": { "type": "string", "format": "date-time" }
         },
         "required": ["uploadId", "status", "connectionName", "clientName", "pipelineName", "totalParts", "uploadedParts", "uploadedPartNumbers", "createdAt", "updatedAt"]
+      },
+
+      "DocumentFolder": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string", "description": "Folder path relative to the connection root." },
+          "isPipelineProtected": { "type": "boolean" },
+          "size": { "type": "integer", "description": "Total size in bytes (omitted for very large folders)." },
+          "lastModified": { "type": "string", "format": "date-time" }
+        },
+        "required": ["name", "path", "isPipelineProtected"]
+      },
+      "DocumentFile": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string", "description": "File path relative to the connection root." },
+          "size": { "type": "integer" },
+          "lastModified": { "type": "string", "format": "date-time" },
+          "isPipelineProtected": { "type": "boolean" }
+        },
+        "required": ["name", "path", "size", "isPipelineProtected"]
+      },
+      "DocumentBreadcrumb": {
+        "type": "object",
+        "properties": {
+          "connectionId": { "type": "string" },
+          "segments": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["connectionId", "segments"]
+      },
+      "BrowseResponse": {
+        "type": "object",
+        "properties": {
+          "folders": { "type": "array", "items": { "$ref": "#/components/schemas/DocumentFolder" } },
+          "files": { "type": "array", "items": { "$ref": "#/components/schemas/DocumentFile" } },
+          "nextToken": { "type": "string", "description": "Token for the next page; omitted when exhausted." },
+          "breadcrumb": { "$ref": "#/components/schemas/DocumentBreadcrumb" }
+        },
+        "required": ["folders", "files", "breadcrumb"]
+      },
+      "DocumentMetadata": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "name": { "type": "string" },
+          "size": { "type": "integer" },
+          "contentType": { "type": "string" },
+          "lastModified": { "type": "string", "format": "date-time" },
+          "etag": { "type": "string" }
+        },
+        "required": ["path", "name", "size"]
+      },
+      "DownloadUrl": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "filename": { "type": "string" },
+          "mimetype": { "type": "string" },
+          "size": { "type": "integer" },
+          "expiresIn": { "type": "integer" }
+        },
+        "required": ["url", "filename", "mimetype", "size", "expiresIn"]
+      },
+      "UploadPartUrl": {
+        "type": "object",
+        "properties": {
+          "partNumber": { "type": "integer" },
+          "url": { "type": "string", "format": "uri" }
+        },
+        "required": ["partNumber", "url"]
+      },
+      "UploadTicket": {
+        "type": "object",
+        "description": "Presigned upload ticket. mode=single → PUT the whole file to url; mode=multipart → PUT each part to parts[].url then complete with uploadId + ETags.",
+        "properties": {
+          "mode": { "type": "string", "enum": ["single", "multipart"] },
+          "path": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "headers": { "type": "object", "additionalProperties": { "type": "string" } },
+          "uploadId": { "type": "string" },
+          "parts": { "type": "array", "items": { "$ref": "#/components/schemas/UploadPartUrl" } },
+          "partSize": { "type": "integer" }
+        },
+        "required": ["mode", "path"]
+      },
+      "CreateUploadTicketParams": {
+        "type": "object",
+        "properties": {
+          "connectionId": { "type": "string" },
+          "path": { "type": "string", "description": "Destination folder relative to the connection root (empty = root)." },
+          "filename": { "type": "string" },
+          "contentType": { "type": "string" },
+          "size": { "type": "integer", "description": "File size in bytes (decides single vs multipart)." },
+          "force": { "type": "boolean" }
+        },
+        "required": ["connectionId", "filename", "size"]
+      },
+      "UploadPartRef": {
+        "type": "object",
+        "properties": {
+          "partNumber": { "type": "integer" },
+          "etag": { "type": "string" }
+        },
+        "required": ["partNumber", "etag"]
+      },
+      "CompleteUploadParams": {
+        "type": "object",
+        "properties": {
+          "connectionId": { "type": "string" },
+          "path": { "type": "string" },
+          "uploadId": { "type": "string" },
+          "parts": { "type": "array", "items": { "$ref": "#/components/schemas/UploadPartRef" } }
+        },
+        "required": ["connectionId", "path", "uploadId", "parts"]
+      },
+      "UploadCompleteResult": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "size": { "type": "integer" },
+          "etag": { "type": "string" }
+        },
+        "required": ["path", "size"]
+      },
+      "AbortUploadParams": {
+        "type": "object",
+        "properties": {
+          "connectionId": { "type": "string" },
+          "path": { "type": "string" },
+          "uploadId": { "type": "string" }
+        },
+        "required": ["connectionId", "path", "uploadId"]
+      },
+      "CreateFolderParams": {
+        "type": "object",
+        "properties": {
+          "connectionId": { "type": "string" },
+          "path": { "type": "string" },
+          "force": { "type": "boolean" }
+        },
+        "required": ["connectionId", "path"]
+      },
+      "MoveParams": {
+        "type": "object",
+        "properties": {
+          "connectionId": { "type": "string" },
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "force": { "type": "boolean" }
+        },
+        "required": ["connectionId", "from", "to"]
+      },
+      "RenameParams": {
+        "type": "object",
+        "properties": {
+          "connectionId": { "type": "string" },
+          "path": { "type": "string" },
+          "newName": { "type": "string", "description": "Single path segment (no slashes)." },
+          "force": { "type": "boolean" }
+        },
+        "required": ["connectionId", "path", "newName"]
+      },
+      "DeleteResult": {
+        "type": "object",
+        "properties": { "deleted": { "type": "boolean", "enum": [true] } },
+        "required": ["deleted"]
+      },
+      "BulkDeleteItem": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "isFolder": { "type": "boolean", "description": "Whether the item is a folder (recursive) or a single object." }
+        },
+        "required": ["path", "isFolder"]
+      },
+      "BulkDeleteParams": {
+        "type": "object",
+        "properties": {
+          "connectionId": { "type": "string" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/BulkDeleteItem" } },
+          "force": { "type": "boolean" }
+        },
+        "required": ["connectionId", "items"]
+      },
+      "BulkDeleteFailure": {
+        "type": "object",
+        "properties": { "path": { "type": "string" }, "reason": { "type": "string" } },
+        "required": ["path", "reason"]
+      },
+      "BulkDeleteResult": {
+        "type": "object",
+        "properties": {
+          "deleted": { "type": "integer" },
+          "failed": { "type": "array", "items": { "$ref": "#/components/schemas/BulkDeleteFailure" } }
+        },
+        "required": ["deleted", "failed"]
+      },
+      "JsonFileResponse": {
+        "type": "object",
+        "description": "When the stored file is a JSON array and offset/limit are supplied, a paginated envelope is returned; otherwise the raw parsed JSON is returned (pagination absent).",
+        "properties": {
+          "data": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "pagination": { "type": "object", "properties": { "total": { "type": "integer" }, "offset": { "type": "integer" }, "limit": { "type": "integer" }, "returned": { "type": "integer" } } }
+        },
+        "required": ["data"]
+      },
+      "SearchFilesParams": {
+        "type": "object",
+        "properties": {
+          "pipelineRunIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "searchTerm": { "type": "string", "description": "Omit to return all rows from the given runs." },
+          "fieldName": { "type": "string" },
+          "exactMatch": { "type": "boolean" },
+          "caseSensitive": { "type": "boolean" },
+          "offset": { "type": "integer" },
+          "limit": { "type": "integer", "description": "1–1000." }
+        },
+        "required": ["pipelineRunIds"]
+      },
+      "SearchResultItem": {
+        "type": "object",
+        "properties": {
+          "pipelineRunId": { "type": "string" },
+          "filename": { "type": "string" },
+          "pipelineName": { "type": "string" },
+          "clientName": { "type": "string" },
+          "rowIndex": { "type": "integer" },
+          "rowData": { "type": "object", "additionalProperties": true },
+          "matchingFields": { "type": "array", "items": { "type": "string" } },
+          "processedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["pipelineRunId", "filename", "rowIndex", "rowData", "matchingFields", "processedAt"]
+      },
+      "SearchResults": {
+        "type": "object",
+        "properties": {
+          "results": { "type": "array", "items": { "$ref": "#/components/schemas/SearchResultItem" } },
+          "pagination": { "type": "object", "properties": { "total": { "type": "integer" }, "offset": { "type": "integer" }, "limit": { "type": "integer" }, "returned": { "type": "integer" } } },
+          "metadata": { "type": "object", "properties": { "searchTerm": { "type": "string" }, "caseSensitive": { "type": "boolean" }, "searchDurationMs": { "type": "integer" }, "filesSearched": { "type": "integer" } } }
+        },
+        "required": ["results", "pagination", "metadata"]
+      },
+      "NotificationPreference": {
+        "type": "object",
+        "description": "A stored per-connection notification preference. The connection FK is named `clientId` on the wire (the v1 term).",
+        "properties": {
+          "id": { "type": "string" },
+          "workspaceId": { "type": "string" },
+          "clientId": { "type": "string", "description": "The connection this preference is scoped to." },
+          "eventType": { "type": "string", "enum": ["PIPELINE_RUN_FAILED", "PIPELINE_RUN_SUCCEEDED"] },
+          "channel": { "type": "string", "enum": ["EMAIL", "SLACK", "SMS"] },
+          "isEnabled": { "type": "boolean" },
+          "recipients": { "type": "array", "items": { "type": "string" } },
+          "metadata": { "type": "object", "additionalProperties": true, "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "clientId", "eventType", "channel", "isEnabled", "recipients", "createdAt", "updatedAt"]
+      },
+      "NotificationPreferenceInput": {
+        "type": "object",
+        "properties": {
+          "eventType": { "type": "string", "enum": ["PIPELINE_RUN_FAILED", "PIPELINE_RUN_SUCCEEDED"] },
+          "channel": { "type": "string", "enum": ["EMAIL", "SLACK", "SMS"] },
+          "isEnabled": { "type": "boolean" },
+          "recipients": { "type": "array", "items": { "type": "string" }, "description": "Required and non-empty when isEnabled is true; ignored when false." }
+        },
+        "required": ["eventType", "channel", "isEnabled"]
+      },
+      "SetNotificationPreferencesParams": {
+        "type": "object",
+        "properties": {
+          "preferences": { "type": "array", "items": { "$ref": "#/components/schemas/NotificationPreferenceInput" }, "minItems": 1 }
+        },
+        "required": ["preferences"]
+      },
+      "ZapierPipelineRunSubscription": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "targetUrl": { "type": "string", "format": "uri" }
+        },
+        "required": ["id", "targetUrl"]
       }
     }
   }

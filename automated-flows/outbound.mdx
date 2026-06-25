@@ -27,7 +27,7 @@ The **outbound flow** lets you push JSON data into FileFeed through the API inst
 
 Before using the outbound flow, you need:
 
-1. **A Connection** (formerly *Client*) — with an `awsUserName`, created in the dashboard or via API
+1. **A Connection** (formerly *Client*) — created in the dashboard or via API. Outbound uploads reference it by its human-readable `name`.
 2. **A Schema** — defining the target data structure
 3. **An Outbound Pipeline** — with `direction: "outbound"`, linking the connection and schema with field mappings
 4. **An API key** — user-type key for authentication
@@ -70,7 +70,7 @@ const init = await filefeed.outbound.initUpload({
 ```
 
 <Tip>
-`clientName` is the connection's server-generated `awsUserName` slug, not its display name. Resolve it with `connections.getByName('Acme').awsUserName`. Output resolution: `outputFormat` → extension of `outputFilename` → input filename (defaults to JSON).
+Pass the connection's **human-readable name** as `connectionName` — the same name you created the connection with (e.g. `'Acme Corp'`). The legacy `clientName` field resolves by that same connection name and is deprecated; prefer `connectionName`. Output resolution: `outputFormat` → extension of `outputFilename` → input filename (defaults to JSON).
 </Tip>
 
 ### Step 2: Upload parts

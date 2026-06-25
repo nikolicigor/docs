@@ -8,7 +8,7 @@ description: "TypeScript SDK for programmatic access to FileFeed"
 The `@filefeed/sdk` package provides a type-safe client for the FileFeed API.
 
 - Authentication via API key
-- Resources: Pipeline Runs, Clients, Schemas, Pipelines, Webhooks, Outbound Uploads
+- Resources: Connections (formerly Clients), Pipelines, Schemas, Pipeline Runs, Webhooks, Outbound Uploads, Documents, Files, Notifications
 - Pagination helpers and typed responses
 
 ## Quick links
@@ -75,33 +75,35 @@ For endpoint details and payload schemas, see the API Reference.
 </Note>
 
 <AccordionGroup>
-  <Accordion icon="users" title="clients">
-    Manage SFTP clients and connection details.
+  <Accordion icon="plug" title="connections">
+    Manage SFTP / Email endpoints (formerly called *clients*). The deprecated
+    `filefeed.clients.*` namespace still works and proxies here.
 
     | Method | Signature | Description |
     |---|---|---|
-    | list | `list()` | List clients. |
-    | retrieve | `retrieve(id)` | Get a client by id. |
-    | getByName | `getByName(name)` | Get a client by name (unique per workspace). Resolves to the client or `undefined`. |
-    | create | `create(params)` | Create a client with credentials. |
-    | update | `update(id, params)` | Update client details. |
-    | remove | `remove(id)` | Delete a client. |
-    | testConnection | `testConnection(id)` | Test SFTP connectivity (returns success/message). |
+    | list | `list()` | List connections. |
+    | retrieve | `retrieve(id)` | Get a connection by id. |
+    | getByName | `getByName(name)` | Get a connection by name (unique per workspace). Resolves to the connection or `undefined`. |
+    | create | `create(params)` | Create a connection (SFTP, self-hosted SFTP, or `type: 'EMAIL'`). |
+    | update | `update(id, params)` | Update connection details. |
+    | remove | `remove(id)` | Delete a connection. |
+    | test | `test(id)` | Test SFTP connectivity (returns success/message). No-op for EMAIL. |
 
     **Common workflows**
-    - Provision a client with SFTP credentials
-    - Rotate credentials, manage allowlists
+    - Provision a connection with SFTP credentials (write-only — never read back)
+    - Create an EMAIL connection that ingests mailed attachments
     - Verify connectivity before onboarding
-    - Resolve a client's `awsUserName` (the `clientName` used by outbound uploads) from its human-readable name
+    - Resolve a connection by its human-readable name
 
     ```ts
-    const client = await filefeed.clients.create({ name: 'Acme' });
-    const ok = await filefeed.clients.testConnection(client.id);
+    const conn = await filefeed.connections.create({ name: 'Acme' });
+    const ok = await filefeed.connections.test(conn.id);
 
-    // Look a connection up by name, then read its awsUserName (the value
-    // outbound uploads expect as `clientName`). Credentials are never returned.
-    const conn = await filefeed.connections.getByName('Acme');
-    if (conn) console.log(conn.awsUserName, conn.sftpUsername);
+    // Outbound uploads reference a connection by its human-readable NAME —
+    // pass `connectionName: 'Acme'` directly (no slug lookup needed).
+    // Credentials are never returned on reads.
+    const found = await filefeed.connections.getByName('Acme');
+    if (found) console.log(found.id, found.sftpUsername);
     ```
   </Accordion>
 
@@ -112,20 +114,27 @@ For endpoint details and payload schemas, see the API Reference.
     |---|---|---|
     | list | `list()` | List schemas. |
     | retrieve | `retrieve(id)` | Get a schema. |
-    | create | `create(params)` | Create a schema (fields, validation). |
-    | update | `update(id, params)` | Update schema details. |
+    | create | `create(params)` | Create a schema from a JSON Schema `definition`. |
+    | update | `update(id, params)` | Update a schema's `definition`. |
     | remove | `remove(id)` | Delete a schema. |
     | validate | `validate({ schemaId, data })` | Validate a payload against a schema. |
 
     **Common workflows**
-    - Define required fields and validation rules
+    - Define the column structure as a JSON Schema `definition`
     - Validate a sample payload pre-ingestion
 
     ```ts
-    const schema = await filefeed.schemas.create({ name: 'Employees', fields: [
-      { name: 'email', type: 'string', required: true },
-      { name: 'name', type: 'string', required: true }
-    ] });
+    const schema = await filefeed.schemas.create({
+      name: 'Employees',
+      definition: {
+        type: 'object',
+        properties: {
+          email: { type: 'string' },
+          name: { type: 'string' },
+        },
+        required: ['email', 'name'],
+      },
+    });
     const result = await filefeed.schemas.validate({ schemaId: schema.id, data: { email: 'a@b.com', name: 'Ada' } });
     ```
   </Accordion>
@@ -149,7 +158,17 @@ For endpoint details and payload schemas, see the API Reference.
     - Adjust mappings, then toggle active for go-live
 
     ```ts
-    const pipeline = await filefeed.pipelines.create({ name: 'Employees', clientId, schemaId, mappings: {} });
+    const pipeline = await filefeed.pipelines.create({
+      name: 'Employees',
+      clientId,
+      schemaId,
+      mappings: {
+        fieldMappings: [
+          { source: 'emp_id', target: 'id' },
+          { target: 'source_system', value: 'FileFeed' }, // static constant on every row
+        ],
+      },
+    });
     await filefeed.pipelines.toggleActive(pipeline.id);
     ```
   </Accordion>
@@ -190,6 +209,8 @@ For endpoint details and payload schemas, see the API Reference.
     | update | `update(id, params)` | Update webhook configuration. |
     | remove | `remove(id)` | Delete a webhook. |
     | listDeliveries | `listDeliveries(params)` | Inspect delivery attempts and status codes. |
+    | subscribeZapierPipelineRunEvents | `({ targetUrl })` | Subscribe a Zapier URL to pipeline-run events. |
+    | unsubscribeZapierPipelineRunEvents | `({ id })` | Remove a Zapier pipeline-run subscription. |
 
     **Common workflows**
     - Create a webhook for pipeline events
@@ -219,7 +240,7 @@ For endpoint details and payload schemas, see the API Reference.
     - Use `uploadJson()` for simple one-shot uploads
     - Choose the delivered file's name and format (`csv` | `json` | `xml`)
 
-    `clientName` is the connection's `awsUserName` (resolve it with `connections.getByName(name).awsUserName`).
+    Pass the connection's human-readable `name` as `connectionName` (the legacy `clientName` resolves by that same name and is deprecated).
 
     ```ts
     const result = await filefeed.outbound.uploadJson({
@@ -233,7 +254,67 @@ For endpoint details and payload schemas, see the API Reference.
 
     See the [Outbound Flow guide](/automated-flows/outbound) for the full walkthrough.
   </Accordion>
+
+  <Accordion icon="folder-tree" title="documents">
+    Browse and manage a connection's file store (S3 drive). Paths are relative
+    to the connection root; pipeline-backed folders are protected.
+
+    | Method | Signature | Description |
+    |---|---|---|
+    | browse | `browse({ connectionId, path?, token? })` | List one page of folders/files. |
+    | getMetadata | `getMetadata({ connectionId, path })` | File size, content type, etag. |
+    | getDownloadUrl | `getDownloadUrl({ connectionId, path })` | Presigned download URL. |
+    | createUploadTicket | `createUploadTicket(params)` | Presigned single/multipart upload. |
+    | completeUpload / abortUpload | `(params)` | Finalize / cancel a multipart upload. |
+    | createFolder / move / rename | `(params)` | Folder + path operations. |
+    | deleteObject / deleteFolder / bulkDelete | `(params)` | Delete (force = admin only). |
+
+    ```ts
+    const page = await filefeed.documents.browse({ connectionId: 'conn_1' });
+    console.log(page.folders, page.files);
+    ```
+  </Accordion>
+
+  <Accordion icon="file-magnifying-glass" title="files">
+    Direct access to processed file content (distinct from per-run access on
+    `pipelineRuns`).
+
+    | Method | Signature | Description |
+    |---|---|---|
+    | getJson | `getJson({ clientName, fileName, pipelineId, offset?, limit? })` | Fetch a processed JSON file by name. |
+    | search | `search({ pipelineRunIds, searchTerm?, ... })` | Search rows across processed files. |
+
+    ```ts
+    const results = await filefeed.files.search({
+      pipelineRunIds: ['run_1', 'run_2'],
+      searchTerm: 'john@example.com',
+    });
+    ```
+  </Accordion>
+
+  <Accordion icon="bell-concierge" title="notifications">
+    Per-connection notification preferences — deliver pipeline-run alerts over
+    EMAIL / SLACK / SMS.
+
+    | Method | Signature | Description |
+    |---|---|---|
+    | getPreferences | `getPreferences(connectionId)` | List a connection's preferences. |
+    | setPreferences | `setPreferences(connectionId, { preferences })` | Upsert preferences (an enabled one needs recipients). |
+
+    ```ts
+    await filefeed.notifications.setPreferences('conn_123', {
+      preferences: [
+        { eventType: 'PIPELINE_RUN_FAILED', channel: 'EMAIL', isEnabled: true, recipients: ['ops@acme.com'] },
+      ],
+    });
+    ```
+  </Accordion>
 </AccordionGroup>
+
+<Note>
+The `documents`, `files`, and `notifications` resources and the Zapier webhook
+methods require **`@filefeed/sdk` ≥ 2.5.0**.
+</Note>
 
 ## Example: Paginate Data
 

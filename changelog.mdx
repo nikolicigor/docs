@@ -81,6 +81,36 @@ These shipped within `2026-05-25` and are backwards compatible:
   `outputFilename` now delivers the file in the requested format instead of
   silently falling back to JSON.
 - `@filefeed/sdk@2.3.0` published with `connectionName` support.
+- **Static-value field mappings.** A pipeline field mapping can now be a static
+  constant `{ target, value }` (no `source`) that writes a fixed value into a
+  column on every row, alongside the existing sourced `{ source, target,
+  transform? }` mappings. `@filefeed/sdk@2.3.1`.
+- **Email connections.** Create a connection with `type: "EMAIL"` to ingest
+  files mailed as attachments to a dedicated inbound address
+  (`connection.emailInbox.inboundAddress`). Configure `emailAllowedFormats`
+  (required, non-empty), `emailAllowedSenders`, and `emailSubjectFilter`.
+  Workspace registration is restricted to company email domains.
+  `@filefeed/sdk@2.4.0`.
+- **Documents API** (`/documents/*`). A connection-scoped S3 file manager:
+  `browse`, `metadata`, `download`, presigned single/multipart upload,
+  folder create/move/rename, and object/folder/bulk delete. Pipeline-backed
+  folders are protected (override requires `force` + admin).
+- **Per-connection notification preferences**
+  (`GET`/`PUT /notifications/preferences/:connectionId`). Deliver
+  `PIPELINE_RUN_FAILED` / `PIPELINE_RUN_SUCCEEDED` alerts over `EMAIL` /
+  `SLACK` / `SMS`.
+- **Direct file access.** `GET /files/json` fetches a processed JSON file by
+  name; `POST /files/search` searches rows across processed files.
+- **Zapier pipeline-run subscriptions.**
+  `POST`/`DELETE /webhooks/zapier/pipeline-run-events/{subscribe,unsubscribe}`
+  register a workspace-level `PIPELINE_RUN_EVENT` webhook for Zapier.
+- **Schemas** are defined by a JSON Schema `definition` object (the SDK's
+  legacy `fields` array is ignored by the API). Schema responses always include
+  `isActive`. Webhook signing secrets are returned only once on create and
+  never on reads.
+- `@filefeed/sdk@2.5.0` published with the `documents`, `notifications`, and
+  `files` resources, Zapier webhook methods, `Schema.definition`,
+  `Pipeline.webhooks`, and `PipelineRun.client` / `isPipelineDeleted`.
 
 [Read the migration guide →](/migration/v1-to-v2)
 
