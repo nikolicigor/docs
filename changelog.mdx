@@ -111,6 +111,22 @@ These shipped within `2026-05-25` and are backwards compatible:
 - `@filefeed/sdk@2.5.0` published with the `documents`, `notifications`, and
   `files` resources, Zapier webhook methods, `Schema.definition`,
   `Pipeline.webhooks`, and `PipelineRun.client` / `isPipelineDeleted`.
+- **Pipeline run delta.** New endpoint `GET /pipeline-runs/delta` compares the
+  processed files of two runs of the **same** pipeline (for example yesterday vs
+  today) and returns the records added and removed, with summary counts and a
+  paginated `changes` list. The diff is a whole-record set difference — there is
+  no record-identity key, so a changed row appears as one removed plus one
+  added. Available as
+  `filefeed.pipelineRuns.delta({ baseRunId, compareRunId })` in
+  `@filefeed/sdk@2.7.0`.
+- **Aggregated field mappings** <sub>limited availability</sub>. A pipeline
+  field mapping can now combine **multiple** source columns into one target —
+  `{ sources, target, delimiter? }` — joined in order by `delimiter` (default a
+  single space), skipping empty values; a `transform`, if set, runs on the
+  joined result. Provide `sources` instead of `source`, alongside the existing
+  sourced and static-value mappings. Gated per workspace: until the feature is
+  enabled for you, saving a pipeline that uses `sources` returns `400`. Contact
+  [support@filefeed.io](mailto:support@filefeed.io) to enable it.
 
 [Read the migration guide →](/migration/v1-to-v2)
 

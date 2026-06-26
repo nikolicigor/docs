@@ -208,10 +208,11 @@ defined mappings and transformations.
 }
 ```
 
-Each entry in `fieldMappings` is one of two kinds:
+Each entry in `fieldMappings` is one of three kinds:
 
 - **Sourced** — `{ "source": "...", "target": "...", "transform": "..." }` copies a column from the input into the target field.
 - **Static value** — `{ "target": "...", "value": "..." }` writes a fixed constant into the target field on **every row**, regardless of the input. Omit `source` and provide `value` instead. Useful for stamping metadata that isn't in the file (a source system, region, batch tag). Transforms don't apply to a static value — the constant is written verbatim. Works in both inbound and outbound pipelines.
+- **Aggregated** — `{ "sources": ["...", "..."], "target": "...", "delimiter": " " }` joins **several** input columns into one target field, in order, joined by `delimiter` (default a single space), skipping empty values so the delimiter never dangles. Provide `sources` instead of `source`. A `transform`, if set, runs on the joined result.
 
 ```json
 // A static value alongside sourced mappings
@@ -222,6 +223,22 @@ Each entry in `fieldMappings` is one of two kinds:
   ]
 }
 ```
+
+```json
+// Combine first + last name into one column
+{
+  "fieldMappings": [
+    { "sources": ["first_name", "last_name"], "target": "full_name", "delimiter": " " }
+  ]
+}
+```
+
+<Note>
+  Aggregated (multi-source) mappings are in **limited availability** and must be
+  enabled for your workspace. Until then, saving a pipeline that uses `sources`
+  returns `400`. Contact [support@filefeed.io](mailto:support@filefeed.io) to
+  enable the field-aggregation feature.
+</Note>
 
 ### 5. Typical Workflow
 

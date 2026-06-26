@@ -141,8 +141,11 @@ For endpoint details and payload schemas, see the API Reference.
 
   <Accordion icon="shuffle" title="pipelines">
     Connect clients to schemas and define mappings/transforms. Field mappings
-    support sourced entries (`{ source, target, transform? }`) and static values
-    (`{ target, value }`) that write a fixed constant into a column on every row.
+    support sourced entries (`{ source, target, transform? }`), static values
+    (`{ target, value }`) that write a fixed constant into a column on every row,
+    and aggregated entries (`{ sources, target, delimiter? }`) that join several
+    input columns into one target — limited availability, see
+    [field-mapping kinds](/automated-flows/sftp).
 
     | Method | Signature | Description |
     |---|---|---|
@@ -185,16 +188,25 @@ For endpoint details and payload schemas, see the API Reference.
     | reprocess | `reprocess({ pipelineRunId })` | Re-run processing for a given run. |
     | getOriginalFileUrl | `getOriginalFileUrl({ pipelineRunId, expiresIn? })` | Presigned URL to the original file. |
     | getProcessedFileUrl | `getProcessedFileUrl({ pipelineRunId, expiresIn? })` | Presigned URL to the processed file. |
+    | delta | `delta({ baseRunId, compareRunId, offset?, limit? })` | Compare two runs of the **same** pipeline; returns the records added/removed between their processed files, with summary counts and a paginated `changes` list. |
 
     **Common workflows**
     - Fetch completed runs, paginate data, then acknowledge the run
     - Download original or processed file for audit trails
     - Reprocess failed runs after fixing mapping or schema
+    - Diff two runs of the same pipeline (e.g. yesterday vs today) to see which records changed
 
     ```ts
     // Quick example
     const runs = await filefeed.pipelineRuns.list({ status: 'completed', limit: 25 });
     const page = await filefeed.pipelineRuns.getData({ pipelineRunId: runs.data[0].id, limit: 1000 });
+
+    // Compare the two most recent runs of the same pipeline
+    const diff = await filefeed.pipelineRuns.delta({
+      baseRunId: runs.data[1].id,
+      compareRunId: runs.data[0].id,
+    });
+    console.log(diff.summary); // { baseCount, compareCount, addedCount, removedCount }
     ```
   </Accordion>
 
