@@ -154,6 +154,25 @@
       }
     },
 
+    "/pipeline-runs/delta": {
+      "get": {
+        "tags": ["Pipeline Runs"],
+        "summary": "Compare two pipeline runs (delta)",
+        "description": "Compares the processed files of two runs of the SAME pipeline (for example yesterday's ingest vs today's) and returns the records added and removed. The diff is a whole-record multiset difference — the platform has no record-identity key, so a changed row surfaces as one removed plus one added. Both runs must belong to the same pipeline, must be in a processed state (`completed`, `delivered`, or `acknowledged`), and must be visible to the caller. The response carries summary counts plus a single paginated `changes` list (added entries first, then removed).",
+        "parameters": [
+          { "name": "baseRunId", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Baseline (earlier) pipeline run id — the \"before\" side." },
+          { "name": "compareRunId", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Comparison (later) pipeline run id — the \"after\" side. Must belong to the same pipeline as baseRunId." },
+          { "name": "offset", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 0, "default": 0 }, "description": "Offset into the flattened changes list." },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 100 }, "description": "Maximum number of change entries to return (1–1000)." }
+        ],
+        "responses": {
+          "200": { "description": "The delta between the two runs.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PipelineRunDelta" } } } },
+          "400": { "description": "Same run id given twice, the two runs belong to different pipelines, a run is not in a processed state, or a processed file is not a record array.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "404": { "description": "A run was not found in the workspace or is not visible to the caller.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+
     "/connections": {
       "get": { "tags": ["Connections"], "summary": "List connections", "operationId": "listConnections", "responses": { "200": { "description": "Connections", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Connection" } }, "example": [ { "id": "conn_123", "name": "Acme" } ] } } } } },
       "post": { "tags": ["Connections"], "summary": "Create connection", "operationId": "createConnection", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateConnectionParams" }, "example": { "name": "Acme" } } } }, "responses": { "200": { "description": "Connection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Connection" }, "example": { "id": "conn_123", "name": "Acme" } } } } } }
@@ -506,6 +525,51 @@
         ]
       },
 
+      "PipelineRunDeltaSummary": {
+        "type": "object",
+        "description": "Aggregate counts for a pipeline-run delta.",
+        "properties": {
+          "baseCount": { "type": "integer", "description": "Records in the base run's processed file." },
+          "compareCount": { "type": "integer", "description": "Records in the compare run's processed file." },
+          "addedCount": { "type": "integer", "description": "Records present in the compare run but not the base run." },
+          "removedCount": { "type": "integer", "description": "Records present in the base run but not the compare run." }
+        },
+        "required": ["baseCount", "compareCount", "addedCount", "removedCount"]
+      },
+      "PipelineRunDeltaChange": {
+        "type": "object",
+        "description": "A single changed record. `added` = present only in the compare run; `removed` = present only in the base run.",
+        "properties": {
+          "changeType": { "type": "string", "enum": ["added", "removed"] },
+          "record": { "type": "object", "additionalProperties": true, "description": "The processed record (a row of the processed file) that was added or removed." }
+        },
+        "required": ["changeType", "record"]
+      },
+      "PipelineRunDeltaPagination": {
+        "type": "object",
+        "description": "Pagination metadata for the flattened changes list.",
+        "properties": {
+          "total": { "type": "integer", "description": "Total change entries (addedCount + removedCount)." },
+          "offset": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "returned": { "type": "integer", "description": "Number of change entries returned in this page." }
+        },
+        "required": ["total", "offset", "limit", "returned"]
+      },
+      "PipelineRunDelta": {
+        "type": "object",
+        "description": "Record-level delta between two runs of the same pipeline.",
+        "properties": {
+          "baseRunId": { "type": "string" },
+          "compareRunId": { "type": "string" },
+          "pipelineId": { "type": "string", "description": "The pipeline definition both runs belong to." },
+          "summary": { "$ref": "#/components/schemas/PipelineRunDeltaSummary" },
+          "changes": { "type": "array", "items": { "$ref": "#/components/schemas/PipelineRunDeltaChange" }, "description": "Changed records for this page (added first, then removed)." },
+          "pagination": { "$ref": "#/components/schemas/PipelineRunDeltaPagination" }
+        },
+        "required": ["baseRunId", "compareRunId", "pipelineId", "summary", "changes", "pagination"]
+      },
+
       "Connection": {
         "type": "object",
         "description": "An SFTP / Email / API endpoint with its credentials. Canonical name as of API version `2026-05-25` (formerly `Client`). Credentials (sftpPassword / sftpPrivateKey / sftpPassphrase / awsPassword) are write-only and never returned in responses.",
@@ -654,12 +718,14 @@
 
       "FieldMapping": {
         "type": "object",
-        "description": "One field mapping. Either sourced ({ source, target, transform? } — copies a column from the input) or static ({ target, value } — writes a literal constant into the target on every row; omit `source`).",
+        "description": "One field mapping. Either sourced ({ source, target, transform? } — copies a column from the input), static ({ target, value } — writes a literal constant into the target on every row; omit `source`), or aggregated ({ sources, target, delimiter? } — joins several input columns into one target, in order, joined by `delimiter`, skipping empty values; a `transform`, if set, runs on the joined result). Aggregated mappings are in limited availability and must be enabled for your workspace — a request that uses them on a workspace without the feature is rejected with 400.",
         "properties": {
-          "source": { "type": "string", "description": "Source column name. Omit for a static mapping." },
+          "source": { "type": "string", "description": "Source column name. Omit for a static or aggregated mapping." },
           "target": { "type": "string", "description": "Target field/column name." },
-          "transform": { "type": "string", "description": "Optional transform key (sourced mappings only)." },
-          "value": { "type": "string", "description": "Static literal written to `target` on every row. Presence marks the mapping static." }
+          "transform": { "type": "string", "description": "Optional transform key (sourced and aggregated mappings; not applied to static values)." },
+          "value": { "type": "string", "description": "Static literal written to `target` on every row. Presence marks the mapping static. Provide instead of `source`/`sources`." },
+          "sources": { "type": "array", "items": { "type": "string" }, "description": "Source columns to combine into `target`, joined by `delimiter` (in order; empty values are skipped). Provide instead of `source`. Presence marks the mapping aggregated. Limited availability — requires the field-aggregation feature." },
+          "delimiter": { "type": "string", "default": " ", "description": "Separator used to join `sources` (default a single space). An explicit empty string concatenates with no separator. Only used with `sources`." }
         },
         "required": ["target"]
       },
